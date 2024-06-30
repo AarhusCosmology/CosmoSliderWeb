@@ -21,23 +21,18 @@ for (let i = 0; i < 6; i++) {
     } )
 }
 
-const bestfit = [0.0223, 0.119, 67.7, 3.04, 0.965, 0.054]
-const param_names = [
-    "&#969;<sub>b</sub>",
-    "&#969;<sub>cdm</sub>",
-    "H<sub>0</sub>",
-    "ln(10<sup>10</sup>A<sub>s</sub>)",
-    "n<sub>s</sub>",
-    "&#964;<sub>reio</sub>"
-];
+function resetToBestfit() {
+    const bestfit = [0.0223, 0.119, 67.7, 3.04, 0.965, 0.054]
 
-for (let i = 0; i < 6; i++) {
-    ranges[i].value = bestfit[i]
-    ranges[i].style.backgroundSize = ((bestfit[i] - ranges[i].min) / (ranges[i].max - ranges[i].min)) * 100 + "% 100%"
+    for (let i = 0; i < 6; i++) {
+	ranges[i].value = bestfit[i]
+	ranges[i].style.backgroundSize = ((bestfit[i] - ranges[i].min) / (ranges[i].max - ranges[i].min)) * 100 + "% 100%"
+    }
 }
 
 
 window.addEventListener('load', async () => {
+    resetToBestfit();
     const modelUrl = 'web_model/model.json'; // Adjust the path if necessary
     model = await tf.loadGraphModel(modelUrl);
 
@@ -50,6 +45,8 @@ window.addEventListener('load', async () => {
     }
     const element = document.body;
     element.addEventListener("click", updateChart);
+
+    window.addEventListener("resize", updateChart);
     
     // Initial chart display
     updateChart();
@@ -78,23 +75,31 @@ const logscale = 200.0;
 const transition = 0.3;
 const l_min = 2.0;
 
-function generateXTicks() {
+function generateXTicks(fewTicks = false) {
     let majorTicks = [];
     let minorTicks = [];
     let logOrder = 1;
+    var linMajor = 500;
+    var linMinor = 100;
+    var minorTicksLogFactor = 1;
+    if (fewTicks) {
+	linMajor = 1000;
+	linMinor = 200;
+	minorTicksLogFactor = 2;
+	}
     
     for (let i = 2; i <= 2500; i++) {
         if (i < logscale) {
             if (Number.isInteger(Math.log10(i))) {
                 majorTicks.push(logScale(i));
                 logOrder *= 10;
-            } else if (i % logOrder === 0) {
+            } else if (i/minorTicksLogFactor % logOrder === 0) {
                 minorTicks.push(logScale(i));
             }
         } else {
-            if (i % 500 === 0) {
+            if (i % linMajor === 0) {
                 majorTicks.push(linScale(i));
-            } else if (i % 100 === 0) {
+            } else if (i % linMinor === 0) {
                 minorTicks.push(linScale(i));
             }
         }
@@ -183,40 +188,80 @@ async function updateChart() {
 		first100Values[i] = first100Values[i] * (10 ** 6 * 2.7255) ** 2;
     }
 
-    // Array af log-equidistant points from 2 to 2500
-    const numPoints = 600;
-    const startLog = Math.log10(2);
-    const endLog = Math.log10(2500);
-    const stepSize = (endLog - startLog) / (numPoints - 1);
-    const xGrid = Array.from({ length: numPoints }, (_, index) => Math.pow(10, startLog + index * stepSize));
+    var xGrid = xdata;
+    var interpolatedData = first100Values;
 
 
-    // Interpolate the data
-    const interpolatedData = interpolateData(first100Values, xdata, xGrid);
-
+    if (document.getElementById('outputChart').offsetWidth > 500) {
+	// Array af log-equidistant points from 2 to 2500
+	const numPoints = 600;
+	const startLog = Math.log10(2);
+	const endLog = Math.log10(2500);
+	const stepSize = (endLog - startLog) / (numPoints - 1);
+	var xGrid = Array.from({ length: numPoints }, (_, index) => Math.pow(10, startLog + index * stepSize));
+	// Interpolate the data
+	var interpolatedData = interpolateData(first100Values, xdata, xGrid);
+    }
     
     // Display the chart
     displayChart(interpolatedData, xGrid);
 }
 
 function displayChart(data, xdata) {
-    const xLabels = ['10¹', '10²', "500", "1000", "1500", "2000", "2500"];
-    const { majorTicks: xMajorTicks, minorTicks: xMinorTicks } = generateXTicks();
+    var xLabels = [];
+    var outputTicks = {};
+    var fontSize = '20px';
+    var xSvgWidth = '120px';
+    var xSvgHeight = '50px';
+    var ySvgWidth = '150px';
+    var ySvgHeight = '150px';
+    var marginLeft = 80;
+    var marginRight = 30;
+    var yLabelMargin = 100;
+    var yLabelOffset = -70;
+    if (document.getElementById('outputChart').offsetWidth > 500) {
+	xLabels = ['10¹', '10²', "500", "1000", "1500", "2000", "2500"];
+	outputTicks = generateXTicks(fewTicks = false);
+    } else {
+	xLabels = ['10¹', '10²', "1000", "2000"];
+	outputTicks = generateXTicks(fewTicks = true);
+	fontSize = '14px';
+	xSvgWidth = '80px';
+	xSvgHeight = '30px';
+	ySvgWidth = '100px';
+	ySvgHeight = '100px';
+	marginLeft = 65;
+	marginRight = 20;
+	yLabelMargin = 65;
+	yLabelOffset = -40;
+    }
+    xMajorTicks = outputTicks.majorTicks;
+    xMinorTicks = outputTicks.minorTicks;
     const xMinorLabels = [];
     for (let i = 0; i < xMinorTicks.length; i++) {
         xMinorLabels.push("");
     }
     const { sortedValues: xTotalTicks, sortedLabels: xTotalLabels } = mergeSortAndSyncArrays(xMajorTicks, xLabels, xMinorTicks, xMinorLabels);
 
-    const yLabels = ['0', '2000', '4000', '6000', '8000'];
-    const yTicks = [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000];
-
+    var yLabels = ['0', '2000', '4000', '6000', '8000'];
+    var yTicks = [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000];
+    if (document.getElementById('outputChart').offsetHeight < 300) {
+	yLabels = ['0', '4000', '8000'];
+	fontSize = '14px';
+        xSvgWidth = '80px';
+        xSvgHeight = '30px';
+        ySvgWidth = '100px';
+        ySvgHeight = '100px';
+        marginLeft = 65;
+        marginRight = 20;
+        yLabelMargin = 65;
+        yLabelOffset = -40;
+    }
+    
     const isDarkMode = document.body.classList.contains('dark-mode');
     const axisColor = isDarkMode ? 'white' : 'black';
     const labelFilter = isDarkMode ? "invert(100%) sepia(100%) saturate(0%) hue-rotate(201deg) brightness(106%) contrast(106%);" : "invert(0%) sepia(97%) saturate(0%) hue-rotate(34deg) brightness(89%) contrast(103%);";
 
-    console.log(xTotalTicks);
-    console.log(xTotalLabels);
 
     Highcharts.setOptions({
 	plotOptions: {
@@ -236,8 +281,8 @@ function displayChart(data, xdata) {
             type: 'spline',
             backgroundColor: isDarkMode ? '#000000' : '#FFFFFF',
             animation: false, // Disable animation
-	    marginLeft: 80,
-	    marginRight: 30,
+	    marginLeft: marginLeft,
+	    marginRight: marginRight,
 	    plotBorderWidth: 2,
 	    plotBorderColor: axisColor,
         },
@@ -253,13 +298,13 @@ function displayChart(data, xdata) {
                 },
                 style: {
                     color: axisColor,
-                    fontSize: '20px'
+                    fontSize: fontSize
                 },
 		rotation: 0,
 		overflow: 'allow',
             },
 	    title: {
-		text: `<img src="./svg_images/ell.svg" style="width:120px; height:50px; filter:${labelFilter}"/>`,
+		text: `<img src="./svg_images/ell.svg" style="width:${xSvgWidth}; height:${xSvgHeight}; filter:${labelFilter}"/>`,
                 useHTML: true,
                 align: 'middle',
 	    },
@@ -279,17 +324,17 @@ function displayChart(data, xdata) {
                 },
                 style: {
                     color: axisColor,
-                    fontSize: '20px'
+                    fontSize: fontSize
                 },
 		rotation: 270,
             },
             title: {
-		text: `<img src="./svg_images/Cl_rotated.svg" style="position:absolute; width:150px; height:150px; filter:${labelFilter}"/>`,
+		text: `<img src="./svg_images/Cl_rotated.svg" style="position:absolute; width:${ySvgWidth}; height:${ySvgHeight}; filter:${labelFilter}"/>`,
                 useHTML: true,
 		rotation: 0,
 		align: 'middle',
-		margin: 100,
-		y: -70,
+		margin: yLabelMargin,
+		y: yLabelOffset,
             },
             gridLineWidth: 0,
             lineWidth: 2,
@@ -321,134 +366,6 @@ function displayChart(data, xdata) {
         }
     });
 }
-
-
-
-/*function displayChart(data, xdata) {
-    const xLabels = ['10¹','10²', "500", "1000", "1500", "2000", "2500"];
-    const { majorTicks: xMajorTicks, minorTicks: xMinorTicks } = generateXTicks();
-    const xMinorLabels = [];
-    for (let i = 0; i < xMinorTicks.length; i++) {
-		xMinorLabels.push("");
-    }
-    const { sortedValues: xTotalTicks, sortedLabels: xTotalLabels } = mergeSortAndSyncArrays(xMajorTicks, xLabels, xMinorTicks, xMinorLabels);
-
-    const yLabels = ['0', '2000', '4000', '6000', '8000'];
-    const yTicks = [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000];
-
-    var axisColor = 'black';
-    var bodyElement = document.body;
-    if (bodyElement.classList.value === "dark-mode") {
-	Chart.defaults.color = 'white';
-	axisColor = 'white';
-    } else {
-	Chart.defaults.color = 'black';
-	axisColor = 'black';
-    }
-    
-    const ctx = document.getElementById('outputChart').getContext('2d');
-    if (window.myChart) {
-        window.myChart.destroy();
-    }
-    window.myChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: xdata.map(x => scaleGraphPoint(x)),
-            datasets: [{
-                data: data,
-                borderWidth: 6,
-                pointRadius: 0, // Disable point markers
-                pointHoverRadius: 0, // Disable point markers on hover
-                showLine: true, // Show line only, no points
-		tension: 0.4,
-		borderColor: 'rgb(38, 135, 242)',
-		z: 1,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false, // Disable animation
-            scales: {
-                x: {
-		    afterBuildTicks: axis => axis.ticks = xTotalTicks,
-		    min: 0,
-		    max: 1,
-		    type: 'linear',
-                    title: {
-                        display: true,
-                        text: ''
-                    },
-		    grid: {
-			display: true,
-			drawTicks: true,
-			drawOnChartArea: false,
-			tickLength: 10,
-			tickWidth: 2,
-			tickColor: axisColor,
-		    },
-		    border: {
-			color: axisColor,
-			width: 2,
-			z: 5,
-		    },
-		    ticks: {
-			callback: function(value, index, values) {
-			    return xTotalLabels[index];
-			},
-			autoSkip: false,
-			font: {
-			    size: 20
-			},
-			maxRotation: 0,
-		    }
-                },
-                y: {
-		    afterBuildTicks: axis => axis.ticks = yTicks.map(v => ({value: v})),
-                    beginAtZero: true,
-                    min: 0,
-                    max: 8400,
-                    title: {
-                        display: true,
-                        text: ''
-                    },
-		    grid: {
-			display: true,
-			drawTicks: true,
-			drawOnChartArea: false,
-			tickLength: 10,
-                        tickWidth: 2,
-			tickColor: axisColor,
-                    },
-                    border: {
-                        color: axisColor,
-			width: 2,
-			z: 5,
-		    },
-		    ticks: {
-                        callback: function(value, index, values) {
-			    return yLabels.includes(value.toString()) ? value : '';
-                        },
-                        font: {
-                            size: 20
-                        },
-			autoSkip: false,
-			minRotation: 90,
-                        maxRotation: 90,
-			// set rotation anchor to the center of the label
-			crossAlign: 'center'
-                    }
-                }
-            },
-	    plugins: {
-		legend: {
-                    display: false
-		},
-	    }
-        }
-    });
-}*/
-
 
 
 // Cubic spline interpolation function
@@ -524,42 +441,3 @@ function interpolateData(yData, xData, xGrid) {
 
     return interpolatedData;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
