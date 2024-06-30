@@ -245,7 +245,7 @@ function displayChart(data, xdata) {
 
     var yLabels = ['0', '2000', '4000', '6000', '8000'];
     var yTicks = [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000];
-    if (document.getElementById('outputChart').offsetHeight < 600) {
+    if (document.getElementById('outputChart').offsetHeight < 500) {
 	yLabels = ['0', '4000', '8000'];
 	fontSize = '14px';
         xSvgWidth = '80px';
