@@ -31,6 +31,18 @@ function resetToBestfit() {
 }
 
 
+const selectedOption = { value: "TT" };
+
+// Function to handle dropdown selection
+function handleSelection(event) {
+    // Set the selected value in the object
+    selectedOption.value = event.target.value;
+    // Example: you can call another function and pass the selected value
+    updateChart();
+}
+
+
+
 window.addEventListener('load', async () => {
     resetToBestfit();
     const modelUrl = 'web_model/model.json'; // Adjust the path if necessary
@@ -179,17 +191,30 @@ async function updateChart() {
 
     // Extract the first 100 values
     const outputArray = await outputData.array();
-    const first100Values = outputArray[0].slice(0, 100);
+    var slice0 = 0;
+    var slice1 = 100;
+    var factor = (10 ** 6 * 2.7255) ** 2;
+    if (selectedOption.value === "TT") {
+	slice0 = 0;
+	slice1 = 100;
+    } else if (selectedOption.value === "TE") {
+	slice0 = 100;
+	slice1 = 200;
+    } else if (selectedOption.value === "EE") {
+	slice0 = 200;
+	slice1 = 300;
+    } else if (selectedOption.value === "PP") {
+	slice0 = 300;
+	slice1 = 400;
+	factor = 1e+7;
+    }
+    const spectrum = outputArray[0].slice(slice0, slice1).map(x => x * factor);
 
     const xdata = [2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,19,21,23,25,27,30,33,36,40,44,49,54,60,67,75,83,92,103,115,128,143,160,179,200,223,249,278,311,348,387,426,465,504,543,582,621,660,699,738,777,816,855,894,933,972,1011,1050,1089,1128,1167,1206,1245,1284,1323,1362,1401,1440,1479,1518,1557,1596,1635,1674,1713,1752,1791,1830,1869,1908,1947,1986,2025,2064,2103,2142,2181,2220,2259,2298,2337,2376,2415,2454,2493]
 
-    // scale the output values with (10^6*T_cmb)^2
-    for (let i = 0; i < first100Values.length; i++) {
-		first100Values[i] = first100Values[i] * (10 ** 6 * 2.7255) ** 2;
-    }
 
     var xGrid = xdata;
-    var interpolatedData = first100Values;
+    var interpolatedData = spectrum;
 
 
     if (document.getElementById('outputChart').offsetWidth > 500) {
@@ -200,7 +225,7 @@ async function updateChart() {
 	const stepSize = (endLog - startLog) / (numPoints - 1);
 	var xGrid = Array.from({ length: numPoints }, (_, index) => Math.pow(10, startLog + index * stepSize));
 	// Interpolate the data
-	var interpolatedData = interpolateData(first100Values, xdata, xGrid);
+	var interpolatedData = interpolateData(spectrum, xdata, xGrid);
     }
     
     // Display the chart
@@ -215,11 +240,41 @@ function displayChart(data, xdata) {
     var xSvgHeight = '50px';
     var ySvgWidth = '150px';
     var ySvgHeight = '150px';
+    var ySvgFile = 'Cl.svg';
     var marginLeft = 80;
     var marginRight = 30;
     var yLabelMargin = 100;
     var yLabelOffset = -70;
     var lineWidth = 6;
+    var yMin = 0;
+    var yMax = 8400;
+    var yTicks = [0, 2000, 4000, 6000, 8000];
+    var yLabels = ['0', '2000', '4000', '6000', '8000'];
+    var yLabelsReduced = ['0', '4000', '8000'];
+    if (selectedOption.value === "TE") {
+	yMin = -230;
+	yMax = 230;
+	yTicks = [-200, -100, 0, 100, 200];
+	yLabels = ['-200', '-100', '0', '100', '200'];
+	yLabelsReduced = ['-200', '0', '200'];
+    } else if (selectedOption.value === "EE") {
+	yMin = -2;
+	yMax = 60;
+	yTicks = [0, 20, 40, 60];
+	yLabels = ['0', '20', '40', '60'];
+	yLabelsReduced = ['0', '30', '60'];
+    } else if (selectedOption.value === "PP") {
+	yMin = 0;
+	yMax = 2.5;
+	yTicks = [0, 0.5, 1, 1.5, 2, 2.5];
+	yLabels = ['0', '0.5', '1', '1.5', '2', '2.5'];
+	yLabelsReduced = ['0', '1', '2'];
+	ySvgFile = 'Cl_pp.svg';
+	ySvgWidth = '260px';
+	ySvgHeight = '260px';
+	yLabelOffset = -140;
+	yLabelMargin = 155;
+    }
     if (document.getElementById('outputChart').offsetWidth > 500) {
 	xLabels = ['10¹', '10²', "500", "1000", "1500", "2000", "2500"];
 	outputTicks = generateXTicks(fewTicks = false);
@@ -236,6 +291,12 @@ function displayChart(data, xdata) {
 	yLabelMargin = 65;
 	yLabelOffset = -40;
 	lineWidth = 3;
+	if (selectedOption.value === "PP") {
+	    ySvgWidth = '170px';
+	    ySvgHeight = '170px';
+	    yLabelOffset = -80;
+	    yLabelMargin = 100;
+	}
     }
     xMajorTicks = outputTicks.majorTicks;
     xMinorTicks = outputTicks.minorTicks;
@@ -245,10 +306,8 @@ function displayChart(data, xdata) {
     }
     const { sortedValues: xTotalTicks, sortedLabels: xTotalLabels } = mergeSortAndSyncArrays(xMajorTicks, xLabels, xMinorTicks, xMinorLabels);
 
-    var yLabels = ['0', '2000', '4000', '6000', '8000'];
-    var yTicks = [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000];
     if (document.getElementById('outputChart').offsetHeight < 400) {
-	yLabels = ['0', '4000', '8000'];
+	yLabels = yLabelsReduced;
 	fontSize = '14px';
         xSvgWidth = '80px';
         xSvgHeight = '30px';
@@ -259,6 +318,12 @@ function displayChart(data, xdata) {
         yLabelMargin = 65;
         yLabelOffset = -40;
 	lineWidth = 3;
+	if (selectedOption.value === "PP") {
+	    ySvgWidth = '170px';
+	    ySvgHeight = '170px';
+	    yLabelOffset = -80;
+	    yLabelMargin = 100;
+	}
     }
     
     const isDarkMode = document.body.classList.contains('dark-mode');
@@ -286,6 +351,7 @@ function displayChart(data, xdata) {
             animation: false, // Disable animation
 	    marginLeft: marginLeft,
 	    marginRight: marginRight,
+	    marginTop: 15,
 	    plotBorderWidth: 2,
 	    plotBorderColor: axisColor,
         },
@@ -332,7 +398,7 @@ function displayChart(data, xdata) {
 		rotation: 270,
             },
             title: {
-		text: `<img src="./svg_images/Cl_rotated.svg" style="position:absolute; width:${ySvgWidth}; height:${ySvgHeight}; filter:${labelFilter}"/>`,
+		text: `<img src="./svg_images/${ySvgFile}" style="position:absolute; width:${ySvgWidth}; height:${ySvgHeight}; filter:${labelFilter}"/>`,
                 useHTML: true,
 		rotation: 0,
 		align: 'middle',
@@ -347,8 +413,9 @@ function displayChart(data, xdata) {
             tickColor: axisColor,
 	    alignTicks: false,
 	    endOnTick: false,
-	    min: 0,
-	    max: 8400,
+	    startOnTick: false,
+	    min: yMin,
+	    max: yMax,
         },
         series: [{
             data: data.map((y, i) => [scaleGraphPoint(xdata[i]), y]), // Properly map xdata to data

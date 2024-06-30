@@ -10,128 +10,21 @@
     <script src="https://code.highcharts.com/highcharts.js"></script>
     <!-- Load custom script -->
     <script src="script.js" defer></script>
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-            background-color: white;
-            color: black;
-        }
-        .dark-mode {
-            background-color: black;
-            color: white;
-        }
-        .slider-container {
-            margin-bottom: 20px;
-            position: relative;
-        }
-        .container-side-by-side {
-            display: flex;
-            flex-wrap: wrap;
-        }
-        .chart {
-            width: 70%;
-            max-width: 100%;
-            height: 800px;
-        }
-        .all-sliders-container {
-            width: 30%;
-            max-width: 100%;
-            padding: 20px;
-            overflow: auto;
-            max-height: 600px;
-        }
-        .slider-label {
-            position: absolute;
-            left: 0;
-            top: -3px;
-            text-align: left;
-        }
-        .slider-value {
-            position: absolute;
-            right: 0%;
-            top: 0px;
-            width: 30%;
-            text-align: right;
-            font-size: 18px;
-        }
-        .slider {
-            margin-top: 32px;
-            margin-bottom: 17px;
-            width: 100%;
-        }
-        button {
-            float: right;
-        }
-        .svgcolor {
-            filter: invert(0%) sepia(97%) saturate(0%) hue-rotate(34deg) brightness(89%) contrast(103%);
-        }
-        .svgcolor-dark-mode {
-            filter: invert(100%) sepia(100%) saturate(0%) hue-rotate(201deg) brightness(106%) contrast(106%);
-        }
-        input[type="range"] {
-            -webkit-appearance: none;
-            background: #AAAAAA;
-            height: 5px;
-            border-radius: 50px;
-            background-image: linear-gradient(#2687F2, #2687F2);
-            background-size: 50% 100%;
-            background-repeat: no-repeat;
-            cursor: pointer;
-            pointer-events: auto;
-            width: 100%;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
-            background-color: #DDDDDD ;
-            border-radius: 50%;
-            pointer-events: auto;
-        }
-        input[type="range"]::-moz-range-thumb {
-            width: 15px;
-            height: 15px;
-            background-color: #DDDDDD;
-            border: none;
-            border-radius: 50%;
-            pointer-events: auto;
-        }
-        @media (max-width: 700px) {
-            .chart {
-                width: 100%;
-                height: 45vh;
-            }
-            .all-sliders-container {
-	        width: 100%;
-                height: 35vh;
-            }
-        }
-        @media (max-width: 500px) {
-            .chart, .all-sliders-container {
-                width: 100%;
-                height: 300px;
-            }
-        }
-        @media (max-height: 900px) and (min-width: 700px) {
-            .chart {
-	        min-height: 400px;
-                height: 80vh;
-            }
-	    .all-sliders-container {
-	        min-height: 300px;
-	        height: 80vh;
-	    }
-        }
-    </style>
+    <!-- Load custom styles -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container-side-by-side" style="float:right">
-        <button onclick="resetToBestfit()">Reset to best-fit</button>
-        <button onclick="toggleDarkMode()">Switch appearance</button>
+        <button onclick="resetToBestfit()">Reset</button>
+      
+        <select id="dropdown" onchange="handleSelection(event)">
+            <option value="TT">TT</option>
+            <option value="TE">TE</option>
+            <option value="EE">EE</option>
+	    <option value="PP">𝜑𝜑</option>
+        </select>
+	
+        <button onclick="toggleDarkMode()">Appearance</button>
     </div>
     <h1>CosmoSlider</h1>
 
@@ -173,5 +66,12 @@
             </div>
         </div>
     </div>
+    <div class="app-download-section">
+        <a href="https://apps.apple.com/us/app/cosmoslider/id6504750261?itsct=apps_box_badge&amp;itscg=30200" style="display: inline-block; overflow: hidden; border-radius: 13px; width: 250px; height: 83px;"><img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83&amp;releaseDate=1719273600" alt="Download on the App Store" style="border-radius: 13px; width: 250px; height: 83px;"></a>
+    </div>
+    <footer class="credits">
+      <p>Author: Andreas Nygaard</p>
+      <a href="mailto:andreas@phys.au.dk">andreas@phys.au.dk</a></p>
+    </footer>
 </body>
 </html>
