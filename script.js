@@ -192,7 +192,7 @@ async function updateChart() {
     var interpolatedData = first100Values;
 
 
-    if (document.getElementById('outputChart').offsetWidth > 300) {
+    if (document.getElementById('outputChart').offsetWidth > 500) {
 	// Array af log-equidistant points from 2 to 2500
 	const numPoints = 600;
 	const startLog = Math.log10(2);
@@ -220,7 +220,7 @@ function displayChart(data, xdata) {
     var yLabelMargin = 100;
     var yLabelOffset = -70;
     var lineWidth = 6;
-    if (document.getElementById('outputChart').offsetWidth > 300) {
+    if (document.getElementById('outputChart').offsetWidth > 500) {
 	xLabels = ['10¹', '10²', "500", "1000", "1500", "2000", "2500"];
 	outputTicks = generateXTicks(fewTicks = false);
     } else {
@@ -247,7 +247,7 @@ function displayChart(data, xdata) {
 
     var yLabels = ['0', '2000', '4000', '6000', '8000'];
     var yTicks = [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000];
-    if (document.getElementById('outputChart').offsetHeight < 200) {
+    if (document.getElementById('outputChart').offsetHeight < 400) {
 	yLabels = ['0', '4000', '8000'];
 	fontSize = '14px';
         xSvgWidth = '80px';
