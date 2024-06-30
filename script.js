@@ -192,7 +192,7 @@ async function updateChart() {
     var interpolatedData = first100Values;
 
 
-    if (document.getElementById('outputChart').offsetWidth > 500) {
+    if (document.getElementById('outputChart').offsetWidth > 300) {
 	// Array af log-equidistant points from 2 to 2500
 	const numPoints = 600;
 	const startLog = Math.log10(2);
@@ -219,7 +219,8 @@ function displayChart(data, xdata) {
     var marginRight = 30;
     var yLabelMargin = 100;
     var yLabelOffset = -70;
-    if (document.getElementById('outputChart').offsetWidth > 500) {
+    var lineWidth = 6;
+    if (document.getElementById('outputChart').offsetWidth > 300) {
 	xLabels = ['10¹', '10²', "500", "1000", "1500", "2000", "2500"];
 	outputTicks = generateXTicks(fewTicks = false);
     } else {
@@ -234,6 +235,7 @@ function displayChart(data, xdata) {
 	marginRight = 20;
 	yLabelMargin = 65;
 	yLabelOffset = -40;
+	lineWidth = 3;
     }
     xMajorTicks = outputTicks.majorTicks;
     xMinorTicks = outputTicks.minorTicks;
@@ -245,7 +247,7 @@ function displayChart(data, xdata) {
 
     var yLabels = ['0', '2000', '4000', '6000', '8000'];
     var yTicks = [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000];
-    if (document.getElementById('outputChart').offsetHeight < 300) {
+    if (document.getElementById('outputChart').offsetHeight < 200) {
 	yLabels = ['0', '4000', '8000'];
 	fontSize = '14px';
         xSvgWidth = '80px';
@@ -256,6 +258,7 @@ function displayChart(data, xdata) {
         marginRight = 20;
         yLabelMargin = 65;
         yLabelOffset = -40;
+	lineWidth = 3;
     }
     
     const isDarkMode = document.body.classList.contains('dark-mode');
@@ -349,7 +352,7 @@ function displayChart(data, xdata) {
         },
         series: [{
             data: data.map((y, i) => [scaleGraphPoint(xdata[i]), y]), // Properly map xdata to data
-            lineWidth: 6,
+            lineWidth: lineWidth,
             marker: {
                 enabled: false
             },
