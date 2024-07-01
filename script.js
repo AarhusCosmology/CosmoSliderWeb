@@ -159,27 +159,11 @@ window.addEventListener('load', async () => {
     element.addEventListener("click", updateAxes);
 
     window.addEventListener("resize", updateAxes);
-    
+
     // Initial chart display
     updateAxes();
     updateData();
 });
-
-
-function toggleDarkMode() {
-    var bodyElement = document.body;
-    bodyElement.classList.toggle("dark-mode");
-    for (let i = 1; i <= 6; i++) {
-	// iterate over slider labels with ids slider1-label, slider2-label, etc.
-        const element = document.querySelector(`#slider${i}-label`);
-	// if the element has class svgcolor, it should switch to svgcolor-dark-mode, and vice versa
-	if (bodyElement.classList.value === "dark-mode") {
-	    element.classList.replace("svgcolor", "svgcolor-dark-mode");
-	} else {
-	    element.classList.replace("svgcolor-dark-mode", "svgcolor");
-	}
-    }
-}
 
 
 const logscale = 200.0;
