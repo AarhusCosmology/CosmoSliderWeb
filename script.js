@@ -21,13 +21,18 @@ for (let i = 0; i < 6; i++) {
     } )
 }
 
-function resetToBestfit() {
+function resetSlidersToBestfit() {
     const bestfit = [0.0223, 0.119, 67.7, 3.04, 0.965, 0.054]
 
     for (let i = 0; i < 6; i++) {
 	ranges[i].value = bestfit[i]
 	ranges[i].style.backgroundSize = ((bestfit[i] - ranges[i].min) / (ranges[i].max - ranges[i].min)) * 100 + "% 100%"
     }
+}
+
+function resetGraphToBestfit() {
+    resetSlidersToBestfit();
+    updateData();
 }
 
 
@@ -38,13 +43,108 @@ function handleSelection(event) {
     // Set the selected value in the object
     selectedOption.value = event.target.value;
     // Example: you can call another function and pass the selected value
-    updateChart();
+    updateAxes();
 }
 
 
 
+// initialize dictionaries. One contains axis plot configurations, and the other contains the data to be plotted
+const axisConfig = {
+    chart: {
+		type: 'spline',
+		backgroundColor: '#FFFFFF',
+		animation: false, // Disable animation
+		marginLeft: 80,
+		marginRight: 30,
+		marginTop: 15,
+		plotBorderWidth: 2,
+		plotBorderColor: 'black',
+    },
+    title: {
+		text: ''
+    },
+    xAxis: {
+	type: 'linear',
+	tickPositions: [],
+	labels: {
+	    formatter: function() {
+		return xTotalLabels[xTotalTicks.indexOf(this.value)] || '';
+	    },
+	    style: {
+		color: 'black',
+		fontSize: '20px'
+	    },
+	    rotation: 0,
+	    overflow: 'allow',
+	},
+	title: {
+	    text: `<img src="./svg_images/ell.svg" style="width:120px; height:50px;"/>`,
+	    useHTML: true,
+	    align: 'middle',
+	},
+	lineColor: 'black',
+	lineWidth: 2,
+	tickWidth: 2,
+	tickLength: 10,
+	tickColor: 'black',
+	min: 0,
+	max: 1,
+	},
+    yAxis: {
+	tickPositions: [0, 2000, 4000, 6000, 8000],
+	labels: {
+	    formatter: function() {
+		return ['0', '2000', '4000', '6000', '8000'].includes(this.value.toString()) ? this.value : '';
+	    },
+	    style: {
+		color: 'black',
+		fontSize: '20px'
+	    },
+	    rotation: 270,
+	},
+	title: {
+	    text: `<img src="./svg_images/Cl.svg" style="position:absolute; width:150px; height:150px;"/>`,
+	    useHTML: true,
+	    rotation: 0,
+	    align: 'middle',
+	    margin: 100,
+	    y: -70,
+	},
+	gridLineWidth: 0,
+	lineWidth: 2,
+	lineColor: 'black',
+	tickWidth: 2,
+	tickLength: 10,
+	tickColor: 'black',
+	alignTicks: false,
+	endOnTick: false,
+	startOnTick: false,
+	min: 0,
+	max: 8400,
+    },
+    series: [{
+	data: [],
+	lineWidth: 6,
+	marker: {
+	    enabled: false
+	},
+	color: 'rgb(38, 135, 242)'
+	}],
+    legend: {
+	enabled: false
+    },
+    tooltip: {
+	enabled: false
+    },
+    credits: {
+	enabled: false
+    }
+};
+
+
+
 window.addEventListener('load', async () => {
-    resetToBestfit();
+    resetSlidersToBestfit();
     const modelUrl = 'web_model/model.json'; // Adjust the path if necessary
     model = await tf.loadGraphModel(modelUrl);
 
@@ -52,16 +152,17 @@ window.addEventListener('load', async () => {
     for (let i = 1; i <= 6; i++) {
         const slider = document.getElementById(`slider${i}`);
         sliders.push(slider);
-        slider.addEventListener('input', updateChart);
+        slider.addEventListener('input', updateData);
         document.getElementById(`slider${i}-value`).innerText = slider.value;
     }
     const element = document.body;
-    element.addEventListener("click", updateChart);
+    element.addEventListener("click", updateAxes);
 
-    window.addEventListener("resize", updateChart);
+    window.addEventListener("resize", updateAxes);
     
     // Initial chart display
-    updateChart();
+    updateAxes();
+    updateData();
 });
 
 
@@ -73,11 +174,9 @@ function toggleDarkMode() {
         const element = document.querySelector(`#slider${i}-label`);
 	// if the element has class svgcolor, it should switch to svgcolor-dark-mode, and vice versa
 	if (bodyElement.classList.value === "dark-mode") {
-	    element.classList.remove("svgcolor");
-	    element.classList.add("svgcolor-dark-mode");
+	    element.classList.replace("svgcolor", "svgcolor-dark-mode");
 	} else {
-	    element.classList.remove("svgcolor-dark-mode");
-	    element.classList.add("svgcolor");
+	    element.classList.replace("svgcolor-dark-mode", "svgcolor");
 	}
     }
 }
@@ -177,62 +276,7 @@ function mergeSortAndSyncArrays(arr1, labels1, arr2, labels2) {
     };
 }
 
-
-async function updateChart() {
-    // Get slider values
-    const sliderValues = sliders.map(slider => parseFloat(slider.value));
-    sliderValues.forEach((value, index) => {
-        document.getElementById(`slider${index + 1}-value`).innerText = value;
-    });
-
-    // Create input tensor
-    const inputData = tf.tensor([sliderValues]);
-    const outputData = model.predict(inputData);
-
-    // Extract the first 100 values
-    const outputArray = await outputData.array();
-    var slice0 = 0;
-    var slice1 = 100;
-    var factor = (10 ** 6 * 2.7255) ** 2;
-    if (selectedOption.value === "TT") {
-	slice0 = 0;
-	slice1 = 100;
-    } else if (selectedOption.value === "TE") {
-	slice0 = 100;
-	slice1 = 200;
-    } else if (selectedOption.value === "EE") {
-	slice0 = 200;
-	slice1 = 300;
-    } else if (selectedOption.value === "PP") {
-	slice0 = 300;
-	slice1 = 400;
-	factor = 1e+7;
-    }
-    const spectrum = outputArray[0].slice(slice0, slice1).map(x => x * factor);
-
-    const xdata = [2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,19,21,23,25,27,30,33,36,40,44,49,54,60,67,75,83,92,103,115,128,143,160,179,200,223,249,278,311,348,387,426,465,504,543,582,621,660,699,738,777,816,855,894,933,972,1011,1050,1089,1128,1167,1206,1245,1284,1323,1362,1401,1440,1479,1518,1557,1596,1635,1674,1713,1752,1791,1830,1869,1908,1947,1986,2025,2064,2103,2142,2181,2220,2259,2298,2337,2376,2415,2454,2493]
-
-
-    var xGrid = xdata;
-    var interpolatedData = spectrum;
-
-
-    if (document.getElementById('outputChart').offsetWidth > 500) {
-	// Array af log-equidistant points from 2 to 2500
-	const numPoints = 600;
-	const startLog = Math.log10(2);
-	const endLog = Math.log10(2500);
-	const stepSize = (endLog - startLog) / (numPoints - 1);
-	var xGrid = Array.from({ length: numPoints }, (_, index) => Math.pow(10, startLog + index * stepSize));
-	// Interpolate the data
-	var interpolatedData = interpolateData(spectrum, xdata, xGrid);
-    }
-    
-    // Display the chart
-    displayChart(interpolatedData, xGrid);
-}
-
-function displayChart(data, xdata) {
+async function updateAxes() {
     var xLabels = [];
     var outputTicks = {};
     var fontSize = '20px';
@@ -330,7 +374,138 @@ function displayChart(data, xdata) {
     const axisColor = isDarkMode ? 'white' : 'black';
     const labelFilter = isDarkMode ? "invert(100%) sepia(100%) saturate(0%) hue-rotate(201deg) brightness(106%) contrast(106%);" : "invert(0%) sepia(97%) saturate(0%) hue-rotate(34deg) brightness(89%) contrast(103%);";
 
+    axisConfig.chart = {
+        type: 'spline',
+        backgroundColor: isDarkMode ? '#000000' : '#FFFFFF',
+        animation: false, // Disable animation                                                                     
+        marginLeft: marginLeft,
+        marginRight: marginRight,
+        marginTop: 15,
+        plotBorderWidth: 2,
+        plotBorderColor: axisColor,
+    };
+    axisConfig.title = {
+	text: ''
+    };
+    axisConfig.xAxis = {
+        type: 'linear',
+        tickPositions: xTotalTicks,
+        labels: {
+            formatter: function() {
+                return xTotalLabels[xTotalTicks.indexOf(this.value)] || '';
+            },
+            style: {
+                color: axisColor,
+                fontSize: fontSize
+            },
+            rotation: 0,
+            overflow: 'allow',
+        },
+        title: {
+            text: `<img src="./svg_images/ell.svg" style="width:${xSvgWidth}; height:${xSvgHeight}; filter:${labelFilter}"/>`,
+            useHTML: true,
+            align: 'middle',
+        },
+        lineColor: axisColor,
+        lineWidth: 2,
+        tickWidth: 2,
+        tickLength: 10,
+        tickColor: axisColor,
+        min: 0,
+        max: 1,
+    };
+    axisConfig.yAxis = {
+        tickPositions: yTicks,
+        labels: {
+            formatter: function() {
+                return yLabels.includes(this.value.toString()) ? this.value : '';
+            },
+            style: {
+                color: axisColor,
+                fontSize: fontSize
+            },
+            rotation: 270,
+        },
+        title: {
+            text: `<img src="./svg_images/${ySvgFile}" style="position:absolute; width:${ySvgWidth}; height:${ySvgHeight}; filter:${labelFilter}"/>`,
+            useHTML: true,
+            rotation: 0,
+            align: 'middle',
+            margin: yLabelMargin,
+            y: yLabelOffset,
+        },
+        gridLineWidth: 0,
+        lineWidth: 2,
+        lineColor: axisColor,
+        tickWidth: 2,
+        tickLength: 10,
+        tickColor: axisColor,
+        alignTicks: false,
+        endOnTick: false,
+        startOnTick: false,
+        min: yMin,
+        max: yMax,
+    };
+    axisConfig.series[0].lineWidth = lineWidth;
 
+    displayChart();
+};
+    
+async function updateData() {
+    // Get slider values
+    const sliderValues = sliders.map(slider => parseFloat(slider.value));
+    sliderValues.forEach((value, index) => {
+        document.getElementById(`slider${index + 1}-value`).innerText = value;
+    });
+
+    // Create input tensor
+    const inputData = tf.tensor([sliderValues]);
+    const outputData = model.predict(inputData);
+    
+    // Extract the first 100 values
+    const outputArray = await outputData.array();
+    var slice0 = 0;
+    var slice1 = 100;
+    var factor = (10 ** 6 * 2.7255) ** 2;
+    if (selectedOption.value === "TT") {
+	slice0 = 0;
+	slice1 = 100;
+    } else if (selectedOption.value === "TE") {
+	slice0 = 100;
+	slice1 = 200;
+    } else if (selectedOption.value === "EE") {
+	slice0 = 200;
+	slice1 = 300;
+    } else if (selectedOption.value === "PP") {
+	slice0 = 300;
+	slice1 = 400;
+	factor = 1e+7;
+    }
+    const spectrum = outputArray[0].slice(slice0, slice1).map(x => x * factor);
+
+    const xdata = [2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,19,21,23,25,27,30,33,36,40,44,49,54,60,67,75,83,92,103,115,128,143,160,179,200,223,249,278,311,348,387,426,465,504,543,582,621,660,699,738,777,816,855,894,933,972,1011,1050,1089,1128,1167,1206,1245,1284,1323,1362,1401,1440,1479,1518,1557,1596,1635,1674,1713,1752,1791,1830,1869,1908,1947,1986,2025,2064,2103,2142,2181,2220,2259,2298,2337,2376,2415,2454,2493]
+
+
+    var xGrid = xdata;
+    var interpolatedData = spectrum;
+
+
+    if (document.getElementById('outputChart').offsetWidth > 500) {
+	// Array af log-equidistant points from 2 to 2500
+	const numPoints = 600;
+	const startLog = Math.log10(2);
+	const endLog = Math.log10(2500);
+	const stepSize = (endLog - startLog) / (numPoints - 1);
+	var xGrid = Array.from({ length: numPoints }, (_, index) => Math.pow(10, startLog + index * stepSize));
+	// Interpolate the data
+	var interpolatedData = interpolateData(spectrum, xdata, xGrid);
+    }
+    axisConfig.series[0].data = interpolatedData.map((y, i) => [scaleGraphPoint(xGrid[i]), y]);
+    
+    displayChart();
+};
+
+function displayChart() {
     Highcharts.setOptions({
 	plotOptions: {
 	    series: {
@@ -343,98 +518,7 @@ function displayChart(data, xdata) {
 	    },
 	}
     });
-    
-    Highcharts.chart('outputChart', {
-        chart: {
-            type: 'spline',
-            backgroundColor: isDarkMode ? '#000000' : '#FFFFFF',
-            animation: false, // Disable animation
-	    marginLeft: marginLeft,
-	    marginRight: marginRight,
-	    marginTop: 15,
-	    plotBorderWidth: 2,
-	    plotBorderColor: axisColor,
-        },
-        title: {
-            text: ''
-        },
-        xAxis: {
-            type: 'linear',
-            tickPositions: xTotalTicks,
-            labels: {
-                formatter: function() {
-                    return xTotalLabels[xTotalTicks.indexOf(this.value)] || '';
-                },
-                style: {
-                    color: axisColor,
-                    fontSize: fontSize
-                },
-		rotation: 0,
-		overflow: 'allow',
-            },
-	    title: {
-		text: `<img src="./svg_images/ell.svg" style="width:${xSvgWidth}; height:${xSvgHeight}; filter:${labelFilter}"/>`,
-                useHTML: true,
-                align: 'middle',
-	    },
-            lineColor: axisColor,
-            lineWidth: 2,
-            tickWidth: 2,
-            tickLength: 10,
-            tickColor: axisColor,
-	    min: 0,
-	    max: 1,
-        },
-        yAxis: {
-            tickPositions: yTicks,
-            labels: {
-                formatter: function() {
-                    return yLabels.includes(this.value.toString()) ? this.value : '';
-                },
-                style: {
-                    color: axisColor,
-                    fontSize: fontSize
-                },
-		rotation: 270,
-            },
-            title: {
-		text: `<img src="./svg_images/${ySvgFile}" style="position:absolute; width:${ySvgWidth}; height:${ySvgHeight}; filter:${labelFilter}"/>`,
-                useHTML: true,
-		rotation: 0,
-		align: 'middle',
-		margin: yLabelMargin,
-		y: yLabelOffset,
-            },
-            gridLineWidth: 0,
-            lineWidth: 2,
-            lineColor: axisColor,
-            tickWidth: 2,
-            tickLength: 10,
-            tickColor: axisColor,
-	    alignTicks: false,
-	    endOnTick: false,
-	    startOnTick: false,
-	    min: yMin,
-	    max: yMax,
-        },
-        series: [{
-            data: data.map((y, i) => [scaleGraphPoint(xdata[i]), y]), // Properly map xdata to data
-            lineWidth: lineWidth,
-            marker: {
-                enabled: false
-            },
-            color: 'rgb(38, 135, 242)'
-        }],
-        legend: {
-            enabled: false
-        },
-	tooltip: {
-            enabled: false
-        },
-        credits: {
-            enabled: false
-        }
-    });
+    Highcharts.chart('outputChart', axisConfig);
 }
 
 
