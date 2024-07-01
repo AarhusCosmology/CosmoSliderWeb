@@ -43,7 +43,7 @@ function handleSelection(event) {
     // Set the selected value in the object
     selectedOption.value = event.target.value;
     // Example: you can call another function and pass the selected value
-    updateAxes();
+    updateAxes(noDisplay = true);
     updateData();
 }
 
@@ -162,7 +162,7 @@ window.addEventListener('load', async () => {
     window.addEventListener("resize", updateAxes);
 
     // Initial chart display
-    updateAxes();
+    updateAxes(noDisplay = true);
     updateData();
 });
 
@@ -261,7 +261,7 @@ function mergeSortAndSyncArrays(arr1, labels1, arr2, labels2) {
     };
 }
 
-async function updateAxes() {
+async function updateAxes(noDisplay = false) {
     var xLabels = [];
     var outputTicks = {};
     var fontSize = '20px';
@@ -433,7 +433,9 @@ async function updateAxes() {
     };
     axisConfig.series[0].lineWidth = lineWidth;
 
-    displayChart();
+    if (!noDisplay) {
+	displayChart();
+    }
 };
     
 async function updateData() {
