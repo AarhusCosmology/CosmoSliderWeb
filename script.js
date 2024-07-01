@@ -32,7 +32,7 @@ function resetSlidersToBestfit() {
 
 function resetGraphToBestfit() {
     resetSlidersToBestfit();
-    updateData();
+    updateDataAndChart();
 }
 
 
@@ -43,8 +43,8 @@ function handleSelection(event) {
     // Set the selected value in the object
     selectedOption.value = event.target.value;
     // Example: you can call another function and pass the selected value
-    updateAxes(noDisplay = true);
-    updateData();
+    updateAxes();
+    updateDataAndChart();
 }
 
 
@@ -153,17 +153,16 @@ window.addEventListener('load', async () => {
     for (let i = 1; i <= 6; i++) {
         const slider = document.getElementById(`slider${i}`);
         sliders.push(slider);
-        slider.addEventListener('input', updateData);
+        slider.addEventListener('input', updateDataAndChart);
         document.getElementById(`slider${i}-value`).innerText = slider.value;
     }
-    const element = document.body;
-    element.addEventListener("click", updateAxes);
+    document.body.addEventListener("click", updateAxesAndChart);
 
-    window.addEventListener("resize", updateAxes);
+    window.addEventListener("resize", updateAxesAndChart);
 
     // Initial chart display
-    updateAxes(noDisplay = true);
-    updateData();
+    updateAxes();
+    updateDataAndChart();
 });
 
 
@@ -261,7 +260,16 @@ function mergeSortAndSyncArrays(arr1, labels1, arr2, labels2) {
     };
 }
 
-async function updateAxes(noDisplay = false) {
+
+
+function updateAxesAndChart() {
+    updateAxes();
+    displayChart();
+}
+
+
+
+function updateAxes() {
     var xLabels = [];
     var outputTicks = {};
     var fontSize = '20px';
@@ -432,13 +440,9 @@ async function updateAxes(noDisplay = false) {
         max: yMax,
     };
     axisConfig.series[0].lineWidth = lineWidth;
-
-    if (!noDisplay) {
-	displayChart();
-    }
 };
     
-async function updateData() {
+async function updateDataAndChart() {
     // Get slider values
     const sliderValues = sliders.map(slider => parseFloat(slider.value));
     sliderValues.forEach((value, index) => {
@@ -482,7 +486,7 @@ async function updateData() {
     const interpolatedData = interpolateData(spectrum, xdata, xGrid);
 
     axisConfig.series[0].data = interpolatedData.map((y, i) => [scaleGraphPoint(xGrid[i]), y]);
-    
+
     displayChart();
 };
 
