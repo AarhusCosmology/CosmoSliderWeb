@@ -469,21 +469,15 @@ async function updateData() {
 
     const xdata = [2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,19,21,23,25,27,30,33,36,40,44,49,54,60,67,75,83,92,103,115,128,143,160,179,200,223,249,278,311,348,387,426,465,504,543,582,621,660,699,738,777,816,855,894,933,972,1011,1050,1089,1128,1167,1206,1245,1284,1323,1362,1401,1440,1479,1518,1557,1596,1635,1674,1713,1752,1791,1830,1869,1908,1947,1986,2025,2064,2103,2142,2181,2220,2259,2298,2337,2376,2415,2454,2493]
 
+    // Array af log-equidistant points from 2 to 2500
+    const numPoints = 600;
+    const startLog = Math.log10(2);
+    const endLog = Math.log10(2500);
+    const stepSize = (endLog - startLog) / (numPoints - 1);
+    const xGrid = Array.from({ length: numPoints }, (_, index) => Math.pow(10, startLog + index * stepSize));
+    // Interpolate the data
+    const interpolatedData = interpolateData(spectrum, xdata, xGrid);
 
-    var xGrid = xdata;
-    var interpolatedData = spectrum;
-
-
-    if (document.getElementById('outputChart').offsetWidth > 500) {
-	// Array af log-equidistant points from 2 to 2500
-	const numPoints = 600;
-	const startLog = Math.log10(2);
-	const endLog = Math.log10(2500);
-	const stepSize = (endLog - startLog) / (numPoints - 1);
-	var xGrid = Array.from({ length: numPoints }, (_, index) => Math.pow(10, startLog + index * stepSize));
-	// Interpolate the data
-	var interpolatedData = interpolateData(spectrum, xdata, xGrid);
-    }
     axisConfig.series[0].data = interpolatedData.map((y, i) => [scaleGraphPoint(xGrid[i]), y]);
     
     displayChart();
