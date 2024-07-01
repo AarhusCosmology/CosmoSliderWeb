@@ -44,6 +44,7 @@ function handleSelection(event) {
     selectedOption.value = event.target.value;
     // Example: you can call another function and pass the selected value
     updateAxes();
+    updateData();
 }
 
 
