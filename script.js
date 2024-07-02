@@ -21,6 +21,34 @@ for (let i = 0; i < 6; i++) {
     } )
 }
 
+
+
+
+
+function loadData(name) {
+    const request = new XMLHttpRequest();
+    request.open('GET', name, false); // false makes the request synchronous
+    request.send(null);
+
+    if (request.status === 200) {
+        return JSON.parse(request.responseText);
+    } else {
+        console.error('Failed to load data.json');
+        return null;
+    }
+}
+
+const tt_data = loadData('tt_data.json');
+const te_data = loadData('te_data.json');
+const ee_data = loadData('ee_data.json');
+const pp_data = loadData('pp_data.json');
+
+
+var data = null;
+var checkboxChecked = false;
+
+
+
 function resetSlidersToBestfit() {
     const bestfit = [0.0223, 0.119, 67.7, 3.04, 0.965, 0.054]
 
@@ -42,24 +70,76 @@ const selectedOption = { value: "TT" };
 function handleSelection(event) {
     // Set the selected value in the object
     selectedOption.value = event.target.value;
-    // Example: you can call another function and pass the selected value
+    if (checkboxChecked) {
+	if (selectedOption.value === "TT") {
+            data = tt_data;
+        } else if (selectedOption.value === "TE") {
+            data = te_data;
+        } else if (selectedOption.value === "EE") {
+            data = ee_data;
+        } else if (selectedOption.value === "PP") {
+            data = pp_data;
+        }
+    };
     updateAxes();
     updateDataAndChart();
 }
+
+function showData(checkboxElem) {
+    if (checkboxElem.checked) {
+	if (selectedOption.value === "TT") {
+	    data = tt_data;
+	} else if (selectedOption.value === "TE") {
+	    data = te_data;
+	} else if (selectedOption.value === "EE") {
+	    data = ee_data;
+	} else if (selectedOption.value === "PP") {
+	    data = pp_data;
+	}
+	checkboxChecked = true;
+    } else {
+	data = null;
+	checkboxChecked = false;
+    };
+    updateDataAndChart();
+}
+
+
+
+window.addEventListener('load', async () => {
+    resetSlidersToBestfit();
+    const modelUrl = 'web_model/model.json'; // Adjust the path if necessary
+    model = await tf.loadGraphModel(modelUrl);
+
+    // Initialize sliders
+    for (let i = 1; i <= 6; i++) {
+        const slider = document.getElementById(`slider${i}`);
+        sliders.push(slider);
+        slider.addEventListener('input', updateDataAndChart);
+        document.getElementById(`slider${i}-value`).innerText = slider.value;
+    }
+    document.body.addEventListener("click", updateAxesAndChart);
+
+    window.addEventListener("resize", updateAxesAndChart);
+
+    // Initial chart display
+    updateAxes();
+    updateDataAndChart();
+});
+
 
 
 
 // initialize dictionaries. One contains axis plot configurations, and the other contains the data to be plotted
 const axisConfig = {
     chart: {
-		type: 'spline',
-		backgroundColor: '#FFFFFF',
-		animation: false, // Disable animation
-		marginLeft: 80,
-		marginRight: 30,
-		marginTop: 15,
-		plotBorderWidth: 2,
-		plotBorderColor: 'black',
+	type: 'spline',
+	backgroundColor: '#FFFFFF',
+	marginLeft: 80,
+	marginRight: 30,
+	marginTop: 15,
+	plotBorderWidth: 2,
+	plotBorderColor: 'black',
     },
     title: {
 		text: ''
@@ -130,7 +210,24 @@ const axisConfig = {
 	    enabled: false
 	},
 	color: 'rgb(38, 135, 242)'
-	}],
+    },{
+	type: 'scatter',
+	data: [],
+	opacity: 0.6,
+	marker: {
+	    symbol: 'circle',
+	    radius: 4,
+	    fillColor: 'limeGreen',
+	}
+    },{
+	type: 'errorbar',
+	data: [],
+	linkedTo: ':previous',
+	stemWidth: 3,
+	stemColor: 'limeGreen',
+	whiskerLength: 0,
+	opacity: 0.6
+    }],
     legend: {
 	enabled: false
     },
@@ -141,29 +238,6 @@ const axisConfig = {
 	enabled: false
     }
 };
-
-
-
-window.addEventListener('load', async () => {
-    resetSlidersToBestfit();
-    const modelUrl = 'web_model/model.json'; // Adjust the path if necessary
-    model = await tf.loadGraphModel(modelUrl);
-
-    // Initialize sliders
-    for (let i = 1; i <= 6; i++) {
-        const slider = document.getElementById(`slider${i}`);
-        sliders.push(slider);
-        slider.addEventListener('input', updateDataAndChart);
-        document.getElementById(`slider${i}-value`).innerText = slider.value;
-    }
-    document.body.addEventListener("click", updateAxesAndChart);
-
-    window.addEventListener("resize", updateAxesAndChart);
-
-    // Initial chart display
-    updateAxes();
-    updateDataAndChart();
-});
 
 
 const logscale = 200.0;
@@ -283,6 +357,8 @@ function updateAxes() {
     var yLabelMargin = 100;
     var yLabelOffset = -70;
     var lineWidth = 6;
+    var stemWidth = 3;
+    var pointSize = 4;
     var yMin = 0;
     var yMax = 8400;
     var yTicks = [0, 2000, 4000, 6000, 8000];
@@ -328,6 +404,8 @@ function updateAxes() {
 	yLabelMargin = 65;
 	yLabelOffset = -40;
 	lineWidth = 3;
+	stemWidth = 2;
+	pointSize = 2.5;
 	if (selectedOption.value === "PP") {
 	    ySvgWidth = '170px';
 	    ySvgHeight = '170px';
@@ -355,6 +433,8 @@ function updateAxes() {
         yLabelMargin = 65;
         yLabelOffset = -40;
 	lineWidth = 3;
+	stemWidth = 2;
+	pointSize = 2.5;
 	if (selectedOption.value === "PP") {
 	    ySvgWidth = '170px';
 	    ySvgHeight = '170px';
@@ -362,6 +442,7 @@ function updateAxes() {
 	    yLabelMargin = 100;
 	}
     }
+
     
     const isDarkMode = document.body.classList.contains('dark-mode');
     const axisColor = isDarkMode ? 'white' : 'black';
@@ -440,6 +521,8 @@ function updateAxes() {
         max: yMax,
     };
     axisConfig.series[0].lineWidth = lineWidth;
+    axisConfig.series[2].stemWidth = stemWidth;
+    axisConfig.series[1].marker.radius = pointSize;
 };
     
 async function updateDataAndChart() {
@@ -485,6 +568,23 @@ async function updateDataAndChart() {
     // Interpolate the data
     const interpolatedData = interpolateData(spectrum, xdata, xGrid);
 
+    if (data) {
+	var seriesData = [];
+	var errorData = [];
+	if (selectedOption.value === "PP") {
+	    seriesData = data.map(d => [scaleGraphPoint(d[0]), d[1] * 1e+7]);
+	    errorData = data.map(d => [scaleGraphPoint(d[0]), d[1] * 1e+7 - d[2] * 1e+7, d[1] * 1e+7 + d[3] * 1e+7]);
+	} else {
+	    seriesData = data.map(d => [scaleGraphPoint(d[0]), d[1]]);
+	    errorData = data.map(d => [scaleGraphPoint(d[0]), d[1] - d[2], d[1] + d[3]]);
+	};
+	axisConfig.series[1].data = seriesData;
+	axisConfig.series[2].data = errorData;
+    } else {
+	axisConfig.series[1].data = [];
+	axisConfig.series[2].data = [];
+    };
+
     axisConfig.series[0].data = interpolatedData.map((y, i) => [scaleGraphPoint(xGrid[i]), y]);
 
     displayChart();
@@ -498,7 +598,10 @@ function displayChart() {
 		states: {
                     hover: {
 			enabled: false
-                    }
+                    },
+		    inactive: {
+			enabled: false
+		    }
 		},
 	    },
 	}

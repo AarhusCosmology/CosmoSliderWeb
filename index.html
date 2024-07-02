@@ -8,30 +8,37 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.0.0/dist/tf.min.js"></script>
     <!-- Load Highcharts -->
     <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/highcharts-more.js"></script>
     <!-- Load custom script -->
     <script src="script.js" defer></script>
     <!-- Load custom styles -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container-side-by-side" style="float:right">
-        <button onclick="resetGraphToBestfit()">Reset</button>
+    <!--div class="container-side-by-side"-->
+    <div class="container-buttons">
+        <div class="toggle-checkbox-wrapper">
+            <input class="toggle-checkbox" type="checkbox" id="toggle" onchange="showData(this)">
+            <label for="toggle" class="check-slider"></label>
+	        <span class="toggle-text">Show data</span>
+	</div>
+        <button onclick="resetGraphToBestfit()" class="reset-button">Best-fit</button>
       
-        <select id="dropdown" onchange="handleSelection(event)">
+        <select id="dropdown" onchange="handleSelection(event)" class="dropdown">
             <option value="TT">TT</option>
             <option value="TE">TE</option>
             <option value="EE">EE</option>
 	    <option value="PP">𝜑𝜑</option>
         </select>
 	
-        <button id="toggleDarkMode">Appearance</button>
+        <button id="toggleDarkMode" class="dark-mode-button">Appearance</button>
 	<script>
             document.getElementById('toggleDarkMode').addEventListener('click', function() {
                 document.body.classList.toggle('dark-mode');
             });
 	</script>
     </div>
-    <h1>CosmoSlider</h1>
+    <h1 class="header-text">CosmoSlider</h1>
 
     <div class="container-side-by-side">
         <!-- Canvas for the chart -->
