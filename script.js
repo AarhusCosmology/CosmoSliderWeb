@@ -377,7 +377,7 @@ function updateAxes() {
 	yMax = 60;
 	yTicks = [0, 20, 40, 60];
 	yLabels = ['0', '20', '40', '60'];
-	yLabelsReduced = ['0', '30', '60'];
+	yLabelsReduced = ['0', '60'];
     } else if (selectedOption.value === "PP") {
 	yMin = 0;
 	yMax = 2.5;
