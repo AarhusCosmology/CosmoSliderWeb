@@ -226,7 +226,9 @@ const axisConfig = {
 	stemWidth: 3,
 	stemColor: 'limeGreen',
 	whiskerLength: 0,
-	opacity: 0.6
+	opacity: 0.6,
+	pointRange: 0,
+	pointWidth: 3,
     }],
     legend: {
 	enabled: false
