@@ -567,6 +567,7 @@ function updateAxes() {
             rotation: 0,
             align: 'middle',
             margin: yLabelMargin,
+	    x: parseFloat(ySvgWidth) + yLabelMargin - 40,
             y: yLabelOffset,
         },
         gridLineWidth: 0,
