@@ -562,7 +562,7 @@ function updateAxes() {
             rotation: 270,
         },
         title: {
-            text: `<img src="./svg_images/${ySvgFile}" style="position:absolute; width:${ySvgWidth}; height:${ySvgHeight}; filter:${labelFilter}"/>`,
+            text: `<img src="./svg_images/${ySvgFile}" style="width:${ySvgWidth}; height:${ySvgHeight}; filter:${labelFilter}"/>`,
             useHTML: true,
             rotation: 0,
             align: 'middle',
