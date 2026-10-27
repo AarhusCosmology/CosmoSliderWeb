@@ -7,8 +7,12 @@
     <base target="_parent">
     <!-- favicon -->
     <link rel="shortcut icon" href="./assets/app_logo.ico" type="image/x-icon">
-    <!-- Load TensorFlow.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.0.0/dist/tf.min.js"></script>
+    <!-- TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.4.0/dist/tf.min.js"></script>
+    <!-- TFLite browser runtime -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-tflite@0.0.1-alpha.9/dist/tf-tflite.min.js"></script>
+    <!-- Read the packaged model archive -->
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <!-- Load Highcharts -->
     <script src="https://code.highcharts.com/12.6.2/highcharts.js"></script>
     <script src="https://code.highcharts.com/12.6.2/highcharts-more.js"></script>
@@ -18,76 +22,71 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!--div class="container-side-by-side"-->
-    <div class="container-buttons">
-        <div class="toggle-checkbox-wrapper">
-            <input class="toggle-checkbox" type="checkbox" id="toggle" onchange="showData(this)">
-            <label for="toggle" class="check-slider"></label>
-	        <span class="toggle-text">Show data</span>
-	</div>
-        <button onclick="resetGraphToBestfit()" class="reset-button">Best-fit</button>
-      
-        <select id="dropdown" onchange="handleSelection(event)" class="dropdown">
-            <option value="TT">TT</option>
-            <option value="TE">TE</option>
-            <option value="EE">EE</option>
-	    <option value="PP">𝜑𝜑</option>
-        </select>
-	
-        <button id="toggleDarkMode" class="dark-mode-button">Appearance</button>
-    </div>
-    <h1 class="header-text">CosmoSlider</h1>
+    <header class="top-bar">
+      <h1 class="header-text">CosmoSlider</h1>
+
+      <div class="toggle-checkbox-wrapper">
+        <input
+          class="toggle-checkbox"
+          type="checkbox"
+          id="toggle"
+          onchange="showData(this)"
+        >
+        <label for="toggle" class="check-slider"></label>
+        <span class="toggle-text">Show data</span>
+      </div>
+
+      <div class="control-stack">
+        <button id="toggleDarkMode" class="stack-control">
+          Appearance
+        </button>
+
+        <button
+          onclick="resetGraphToBestfit()"
+          class="stack-control"
+        >
+          Best-fit
+        </button>
+
+        <select
+          id="observableDropdown"
+          class="stack-control"
+          aria-label="Observable"
+          onchange="handleObservableSelection(event)"
+        ></select>
+
+        <select
+          id="dropdown"
+          class="stack-control"
+          aria-label="Spectrum"
+          onchange="handleSelection(event)"
+        ></select>
+      </div>
+    </header>
 
     <div class="container-side-by-side">
         <!-- Canvas for the chart -->
         <div id="outputChart" class="chart"></div>
-       
+
         <!-- Sliders for input dimensions -->
-        <div id="sliders" class="all-sliders-container">
-            <div class="slider-container">
-                <label id="slider1-label" for="slider1" class="slider-label"><img src="svg_images/omega_b.svg" alt="omega_b" class="svgcolor" draggable="false"></i></label>
-                <span id="slider1-value" class="slider-value">0.0223</span>
-                <input type="range" id="slider1" class="slider" min="0.014" max="0.03" step="0.0001" value="0.0223">
-            </div>
-            <div class="slider-container">
-                <label id="slider2-label" for="slider2" class="slider-label"><img src="svg_images/omega_cdm.svg" alt="omega_cdm" class="svgcolor" draggable="false"></i></label>
-                <span id="slider2-value" class="slider-value">0.119</span>
-                <input type="range" id="slider2" class="slider" min="0.0" max="0.3" step="0.001" value="0.119">
-            </div>
-            <div class="slider-container">
-                <label id="slider3-label" for="slider3" class="slider-label" style="top: -7px"><img src="svg_images/H0.svg" alt="H_0" class="svgcolor" draggable="false"></i></label>
-                <span id="slider3-value" class="slider-value">67.7</span>
-                <input type="range" id="slider3" class="slider" min="50" max="120" step="0.1" value="67.7">
-            </div>
-            <div class="slider-container">
-                <label id="slider4-label" for="slider4" class="slider-label" style="top: -11px"><img src="svg_images/ln10^{10}A_s.svg" alt="ln10^{10}A_s" class="svgcolor" draggable="false"></i></label>
-                <span id="slider4-value" class="slider-value">3.04</span>
-                <input type="range" id="slider4" class="slider" min="1" max="5" step="0.01" value="3.04">
-            </div>
-            <div class="slider-container">
-                <label id="slider5-label" for="slider5" class="slider-label"><img src="svg_images/n_s.svg" alt="n_s" class="svgcolor" draggable="false"></i></label>
-                <span id="slider5-value" class="slider-value">0.965</span>
-                <input type="range" id="slider5" class="slider" min="0.5" max="1.5" step="0.001" value="0.965">
-            </div>
-            <div class="slider-container">
-                <label id="slider6-label" for="slider6" class="slider-label"><img src="svg_images/tau_reio.svg" alt="tau_reio" class="svgcolor" draggable="false"></i></label>
-                <span id="slider6-value" class="slider-value">0.054</span>
-                <input type="range" id="slider6" class="slider" min="0.0" max="0.2" step="0.001" value="0.054">
-            </div>
-        </div>
+        <div id="sliders" class="all-sliders-container"></div>
     </div>
+
     <div class="app-download-section">
-        <a href="https://apps.apple.com/us/app/cosmoslider/id6504750261?itsct=apps_box_badge&amp;itscg=30200" style="display: inline-block; overflow: hidden; border-radius: 13px; width: 250px; height: 83px;"><img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83&amp;releaseDate=1719273600" alt="Download on the App Store" style="border-radius: 13px; width: 250px; height: 83px;"></a>
+        <a href="https://apps.apple.com/us/app/cosmoslider/id6504750261?itsct=apps_box_badge&amp;itscg=30200" style="display: inline-block; overflow: hidden; border-radius: 13px; width: 250px; height: 83px;">
+            <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83&amp;releaseDate=1719273600" alt="Download on the App Store" style="border-radius: 13px; width: 250px; height: 83px;">
+        </a>
     </div>
+
     <footer class="credits">
-      <p>Author: Andreas Nygaard</p>
-      <a href="mailto:andreas@phys.au.dk">andreas@phys.au.dk</a></p>
+        <p>Author: Andreas Nygaard</p>
+        <a href="mailto:andreas@phys.au.dk">andreas@phys.au.dk</a>
     </footer>
 
     <div class="buymeacoffee-section">
-      <a href="https://buymeacoffee.com/andreasnygaard" style="display: inline-block; overflow: hidden; border-radius: 13px; width: 250px; height: auto;">
-	<img src="./assets/bmac.png" alt="Buy me a coffee and support my work" style="border-radius: 13px; width: 250px; height: auto;">
-      </a>
+        <a href="https://buymeacoffee.com/andreasnygaard" style="display: inline-block; overflow: hidden; border-radius: 13px; width: 250px; height: auto;">
+            <img src="./assets/bmac.png" alt="Buy me a coffee and support my work" style="border-radius: 13px; width: 250px; height: auto;">
+        </a>
     </div>
 </body>
 </html>

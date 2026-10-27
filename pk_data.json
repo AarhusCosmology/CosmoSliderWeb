@@ -1,0 +1,135 @@
+{
+  "source": {
+    "repository": "https://github.com/marius311/mpk_compilation",
+    "commit": "4bfa131ac7a1063c7fd4c8dd8859f16dfb48e293",
+    "notebook": "notebooks/mpk_compilation.ipynb",
+    "figure": "mpk_compilation.png",
+    "citations": [
+      "Chabanier et al. 2019, arXiv:1905.08103",
+      "Planck 2018: I, arXiv:1807.06205"
+    ]
+  },
+  "note": "Fixed browser-ready matter power spectrum compilation reference from the upstream notebook figure. Values are shown at every website redshift as a visual observational/reference overlay.",
+  "units": {
+    "k": "h/Mpc",
+    "pk": "(Mpc/h)^3"
+  },
+  "datasets": [
+    {
+      "id": "planck_tt",
+      "label": "Planck 2018 TT",
+      "color": "#1f77b4",
+      "points": [
+        { "k": 0.00028, "pk": 260.0, "kLow": 0.00018, "kHigh": 0.00043, "pkLow": 1.0, "pkHigh": 3100.0 },
+        { "k": 0.00048, "pk": 1900.0, "kLow": 0.00035, "kHigh": 0.00072, "pkLow": 650.0, "pkHigh": 3900.0 },
+        { "k": 0.0010, "pk": 3300.0, "kLow": 0.00075, "kHigh": 0.0013, "pkLow": 2200.0, "pkHigh": 5200.0 },
+        { "k": 0.0021, "pk": 7000.0, "kLow": 0.00145, "kHigh": 0.0032, "pkLow": 6200.0, "pkHigh": 8200.0 },
+        { "k": 0.0046, "pk": 16200.0, "kLow": 0.0038, "kHigh": 0.0056, "pkLow": 15000.0, "pkHigh": 17600.0 },
+        { "k": 0.0076, "pk": 22000.0, "kLow": 0.0060, "kHigh": 0.0095, "pkLow": 20100.0, "pkHigh": 24200.0 },
+        { "k": 0.012, "pk": 26000.0, "kLow": 0.0095, "kHigh": 0.016, "pkLow": 23800.0, "pkHigh": 28000.0 },
+        { "k": 0.026, "pk": 23500.0, "kLow": 0.019, "kHigh": 0.038, "pkLow": 21600.0, "pkHigh": 25600.0 },
+        { "k": 0.043, "pk": 15800.0, "kLow": 0.032, "kHigh": 0.067, "pkLow": 14400.0, "pkHigh": 17100.0 },
+        { "k": 0.065, "pk": 10800.0, "kLow": 0.051, "kHigh": 0.085, "pkLow": 9600.0, "pkHigh": 12000.0 },
+        { "k": 0.090, "pk": 7600.0, "kLow": 0.074, "kHigh": 0.110, "pkLow": 6800.0, "pkHigh": 8500.0 },
+        { "k": 0.120, "pk": 5200.0, "kLow": 0.100, "kHigh": 0.145, "pkLow": 4650.0, "pkHigh": 5900.0 },
+        { "k": 0.155, "pk": 3400.0, "kLow": 0.130, "kHigh": 0.180, "pkLow": 3000.0, "pkHigh": 3900.0 },
+        { "k": 0.195, "pk": 2100.0, "kLow": 0.165, "kHigh": 0.230, "pkLow": 1750.0, "pkHigh": 2500.0 }
+      ]
+    },
+    {
+      "id": "planck_ee",
+      "label": "Planck 2018 EE",
+      "color": "#ff7f0e",
+      "points": [
+        { "k": 0.0052, "pk": 23500.0, "kLow": 0.0042, "kHigh": 0.0065, "pkLow": 20200.0, "pkHigh": 27300.0 },
+        { "k": 0.0075, "pk": 24700.0, "kLow": 0.0060, "kHigh": 0.0100, "pkLow": 22300.0, "pkHigh": 27600.0 },
+        { "k": 0.012, "pk": 26000.0, "kLow": 0.0092, "kHigh": 0.017, "pkLow": 22900.0, "pkHigh": 28800.0 },
+        { "k": 0.024, "pk": 22500.0, "kLow": 0.019, "kHigh": 0.034, "pkLow": 19800.0, "pkHigh": 24800.0 },
+        { "k": 0.034, "pk": 18000.0, "kLow": 0.027, "kHigh": 0.044, "pkLow": 15500.0, "pkHigh": 20800.0 },
+        { "k": 0.047, "pk": 12600.0, "kLow": 0.038, "kHigh": 0.061, "pkLow": 11100.0, "pkHigh": 14400.0 },
+        { "k": 0.065, "pk": 9400.0, "kLow": 0.052, "kHigh": 0.083, "pkLow": 8250.0, "pkHigh": 10600.0 },
+        { "k": 0.082, "pk": 7200.0, "kLow": 0.067, "kHigh": 0.105, "pkLow": 6300.0, "pkHigh": 8200.0 },
+        { "k": 0.105, "pk": 5200.0, "kLow": 0.086, "kHigh": 0.130, "pkLow": 4550.0, "pkHigh": 5950.0 },
+        { "k": 0.130, "pk": 3600.0, "kLow": 0.108, "kHigh": 0.158, "pkLow": 3120.0, "pkHigh": 4200.0 },
+        { "k": 0.155, "pk": 2600.0, "kLow": 0.132, "kHigh": 0.185, "pkLow": 2250.0, "pkHigh": 3050.0 },
+        { "k": 0.182, "pk": 1900.0, "kLow": 0.155, "kHigh": 0.215, "pkLow": 1620.0, "pkHigh": 2250.0 },
+        { "k": 0.205, "pk": 1500.0, "kLow": 0.180, "kHigh": 0.235, "pkLow": 1250.0, "pkHigh": 1800.0 }
+      ]
+    },
+    {
+      "id": "planck_phiphi",
+      "label": "Planck 2018 \u03c6\u03c6",
+      "color": "#2ca02c",
+      "points": [
+        { "k": 0.0048, "pk": 24500.0, "kLow": 0.0024, "kHigh": 0.0095, "pkLow": 18000.0, "pkHigh": 29000.0 },
+        { "k": 0.012, "pk": 27500.0, "kLow": 0.006, "kHigh": 0.030, "pkLow": 23000.0, "pkHigh": 30500.0 },
+        { "k": 0.050, "pk": 11500.0, "kLow": 0.032, "kHigh": 0.145, "pkLow": 10300.0, "pkHigh": 13000.0 },
+        { "k": 0.085, "pk": 7600.0, "kLow": 0.060, "kHigh": 0.260, "pkLow": 6500.0, "pkHigh": 9000.0 },
+        { "k": 0.150, "pk": 2200.0, "kLow": 0.100, "kHigh": 0.430, "pkLow": 1800.0, "pkHigh": 2800.0 },
+        { "k": 0.300, "pk": 620.0, "kLow": 0.180, "kHigh": 0.720, "pkLow": 420.0, "pkHigh": 850.0 }
+      ]
+    },
+    {
+      "id": "des_y1",
+      "label": "DES Y1 cosmic shear",
+      "color": "#bcbd22",
+      "points": [
+        { "k": 0.150, "pk": 1600.0, "kLow": 0.130, "kHigh": 0.240, "pkLow": 1350.0, "pkHigh": 1900.0 },
+        { "k": 0.310, "pk": 560.0, "kLow": 0.210, "kHigh": 0.520, "pkLow": 350.0, "pkHigh": 850.0 },
+        { "k": 0.520, "pk": 210.0, "kLow": 0.420, "kHigh": 1.000, "pkLow": 160.0, "pkHigh": 270.0 },
+        { "k": 1.050, "pk": 55.0, "kLow": 0.700, "kHigh": 2.000, "pkLow": 36.0, "pkHigh": 75.0 },
+        { "k": 2.200, "pk": 12.0, "kLow": 1.400, "kHigh": 4.200, "pkLow": 7.0, "pkHigh": 20.0 }
+      ]
+    },
+    {
+      "id": "sdss_dr7_lrg",
+      "label": "SDSS DR7 LRG",
+      "color": "#d62728",
+      "points": [
+        { "k": 0.030, "pk": 21500.0, "kLow": 0.029, "kHigh": 0.031, "pkLow": 18500.0, "pkHigh": 25000.0 },
+        { "k": 0.035, "pk": 18000.0, "kLow": 0.034, "kHigh": 0.036, "pkLow": 15500.0, "pkHigh": 21000.0 },
+        { "k": 0.041, "pk": 14000.0, "kLow": 0.040, "kHigh": 0.042, "pkLow": 12000.0, "pkHigh": 16500.0 },
+        { "k": 0.048, "pk": 11800.0, "kLow": 0.047, "kHigh": 0.049, "pkLow": 9800.0, "pkHigh": 14200.0 },
+        { "k": 0.056, "pk": 10200.0, "kLow": 0.055, "kHigh": 0.057, "pkLow": 8500.0, "pkHigh": 12200.0 },
+        { "k": 0.064, "pk": 8800.0, "kLow": 0.063, "kHigh": 0.065, "pkLow": 7400.0, "pkHigh": 10400.0 },
+        { "k": 0.073, "pk": 7200.0, "kLow": 0.072, "kHigh": 0.074, "pkLow": 6100.0, "pkHigh": 8600.0 },
+        { "k": 0.084, "pk": 6000.0, "kLow": 0.083, "kHigh": 0.085, "pkLow": 5100.0, "pkHigh": 7100.0 },
+        { "k": 0.096, "pk": 5000.0, "kLow": 0.095, "kHigh": 0.097, "pkLow": 4250.0, "pkHigh": 5900.0 },
+        { "k": 0.110, "pk": 4100.0, "kLow": 0.109, "kHigh": 0.111, "pkLow": 3500.0, "pkHigh": 4900.0 },
+        { "k": 0.125, "pk": 3300.0, "kLow": 0.124, "kHigh": 0.126, "pkLow": 2800.0, "pkHigh": 3950.0 },
+        { "k": 0.142, "pk": 2700.0, "kLow": 0.141, "kHigh": 0.143, "pkLow": 2300.0, "pkHigh": 3250.0 },
+        { "k": 0.161, "pk": 2200.0, "kLow": 0.160, "kHigh": 0.162, "pkLow": 1850.0, "pkHigh": 2650.0 },
+        { "k": 0.182, "pk": 1750.0, "kLow": 0.181, "kHigh": 0.183, "pkLow": 1450.0, "pkHigh": 2150.0 },
+        { "k": 0.205, "pk": 1450.0, "kLow": 0.204, "kHigh": 0.206, "pkLow": 1200.0, "pkHigh": 1800.0 },
+        { "k": 0.230, "pk": 1150.0, "kLow": 0.229, "kHigh": 0.231, "pkLow": 950.0, "pkHigh": 1450.0 },
+        { "k": 0.260, "pk": 850.0, "kLow": 0.259, "kHigh": 0.261, "pkLow": 690.0, "pkHigh": 1050.0 }
+      ]
+    },
+    {
+      "id": "eboss_dr14_lya",
+      "label": "eBOSS DR14 Ly-\u03b1 forest",
+      "color": "#9467bd",
+      "points": [
+        { "k": 0.36, "pk": 780.0, "kLow": 0.34, "kHigh": 0.38, "pkLow": 520.0, "pkHigh": 1120.0 },
+        { "k": 0.45, "pk": 360.0, "kLow": 0.43, "kHigh": 0.47, "pkLow": 260.0, "pkHigh": 510.0 },
+        { "k": 0.58, "pk": 230.0, "kLow": 0.56, "kHigh": 0.60, "pkLow": 175.0, "pkHigh": 300.0 },
+        { "k": 0.78, "pk": 120.0, "kLow": 0.75, "kHigh": 0.81, "pkLow": 85.0, "pkHigh": 165.0 },
+        { "k": 0.95, "pk": 70.0, "kLow": 0.92, "kHigh": 0.98, "pkLow": 45.0, "pkHigh": 105.0 },
+        { "k": 1.10, "pk": 52.0, "kLow": 1.06, "kHigh": 1.14, "pkLow": 34.0, "pkHigh": 80.0 },
+        { "k": 1.20, "pk": 35.0, "kLow": 1.16, "kHigh": 1.24, "pkLow": 23.0, "pkHigh": 55.0 },
+        { "k": 1.38, "pk": 24.0, "kLow": 1.34, "kHigh": 1.42, "pkLow": 16.0, "pkHigh": 38.0 },
+        { "k": 1.55, "pk": 18.0, "kLow": 1.50, "kHigh": 1.60, "pkLow": 12.0, "pkHigh": 30.0 },
+        { "k": 1.75, "pk": 12.0, "kLow": 1.70, "kHigh": 1.80, "pkLow": 7.5, "pkHigh": 21.0 },
+        { "k": 1.92, "pk": 9.5, "kLow": 1.86, "kHigh": 1.98, "pkLow": 5.5, "pkHigh": 17.0 },
+        { "k": 2.10, "pk": 8.2, "kLow": 2.04, "kHigh": 2.16, "pkLow": 4.2, "pkHigh": 15.0 },
+        { "k": 2.25, "pk": 7.0, "kLow": 2.18, "kHigh": 2.32, "pkLow": 3.6, "pkHigh": 14.0 },
+        { "k": 2.42, "pk": 6.8, "kLow": 2.34, "kHigh": 2.50, "pkLow": 3.0, "pkHigh": 15.0 },
+        { "k": 2.60, "pk": 6.2, "kLow": 2.52, "kHigh": 2.68, "pkLow": 2.7, "pkHigh": 16.0 },
+        { "k": 2.78, "pk": 5.0, "kLow": 2.70, "kHigh": 2.86, "pkLow": 2.0, "pkHigh": 13.0 },
+        { "k": 2.95, "pk": 3.8, "kLow": 2.86, "kHigh": 3.04, "pkLow": 1.4, "pkHigh": 11.0 },
+        { "k": 3.15, "pk": 2.0, "kLow": 3.05, "kHigh": 3.25, "pkLow": 0.7, "pkHigh": 8.0 },
+        { "k": 3.35, "pk": 1.1, "kLow": 3.25, "kHigh": 3.45, "pkLow": 0.35, "pkHigh": 6.0 }
+      ]
+    }
+  ]
+}

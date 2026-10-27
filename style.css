@@ -1,6 +1,7 @@
 * {
     box-sizing: border-box;
 }
+
 body {
     font-family: Arial, sans-serif;
     /* Firefox */
@@ -18,34 +19,59 @@ body {
     -khtml-user-select: none; /* Konqueror HTML */
     -moz-user-select: none; /* Old versions of Firefox */
     -ms-user-select: none; /* Internet Explorer/Edge */
-    user-select: none; /* Non-prefixed version, currently
-                          supported by Chrome, Edge, Opera and Firefox */
+    user-select: none;
 }
+
 .dark-mode {
     background-color: black;
     color: white;
 }
+
 .slider-container {
     margin-bottom: 20px;
     position: relative;
 }
+
+/* Slider labels must never intercept input events. */
+.slider-container .slider-label {
+    z-index: 0;
+    pointer-events: none;
+}
+
+.slider-container .slider-label img {
+    pointer-events: none;
+    user-select: none;
+}
+
+/* Keep the range input above its SVG label. */
+.slider-container input[type="range"].slider {
+    position: relative;
+    z-index: 2;
+}
+
+/* Value text should not block the slider either. */
+.slider-container .slider-value {
+    z-index: 3;
+    pointer-events: none;
+}
+
+/* Do not let the redshift slider occupy space when hidden. */
+.redshift-slider-container[hidden] {
+    display: none !important;
+}
+
 .container-side-by-side {
     display: flex;
     flex-wrap: wrap;
 }
-.container-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    position: relative;
-    width: 30%;
-    float: right;
-}
+
 .credits {
     text-align: center;
     font-size: 12px;
     color: gray;
     margin-top: 20px;
 }
+
 .chart {
     position: relative;
     width: 70%;
@@ -53,6 +79,7 @@ body {
     height: 800px;
     z-index: 1;
 }
+
 .app-download-section {
     margin: auto;
     text-align: center;
@@ -61,6 +88,7 @@ body {
     width: 100%;
     margin-top: 2cm;
 }
+
 .buymeacoffee-section {
     margin: auto;
     text-align: center;
@@ -69,6 +97,7 @@ body {
     width: 100%;
     margin-top: 1cm;
 }
+
 .all-sliders-container {
     margin-top: 10px;
     width: 30%;
@@ -77,12 +106,14 @@ body {
     overflow: auto;
     max-height: 600px;
 }
+
 .slider-label {
     position: absolute;
     left: 0;
     top: -3px;
     text-align: left;
 }
+
 .slider-value {
     position: absolute;
     right: 0%;
@@ -91,96 +122,133 @@ body {
     text-align: right;
     font-size: 18px;
 }
+
 .slider {
     margin-top: 32px;
     margin-bottom: 17px;
     width: 100%;
 }
-button {
-    float: right;
-}
-.reset-button {
-    position: absolute;
-    right: 0;
-    top: 24px;
-    width: 90px;
-    height: 20px;
-    z-index: 2;
-}
-.dropdown {
-    position: absolute;
-    right: 0;
-    width: 90px;
-    top: 48px;
-    height: 20px;
-    z-index: 2;
-}
+
 select {
-    text-align-last: center;
     text-align: center;
+    text-align-last: center;
     -ms-text-align-last: center;
     -moz-text-align-last: center;
 }
-.dark-mode-button {
-    position: absolute;
-    margin: auto;
-    right: 0;
-    width: 90px;
-    height: 20px;
-    z-index: 2;
+
+/* ---------- Top header layout ---------- */
+.top-bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 120px 125px;
+    column-gap: 12px;
+    align-items: start;
+    width: 100%;
+    margin-bottom: 16px;
 }
 
+.header-text {
+    margin: 0;
+    font-size: clamp(22px, 3vw, 34px);
+    line-height: 1.2;
+    min-width: 0;
+}
+
+/* ---------- Four controls: fixed-width vertical stack ---------- */
+.control-stack {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+    width: 125px;
+    min-width: 125px;
+    margin: 0;
+    padding: 0;
+    justify-self: end;
+}
+
+.control-stack > .stack-control {
+    display: block;
+    position: static;
+    float: none;
+    flex: 0 0 26px;
+    width: 100%;
+    min-width: 0;
+    height: 26px;
+    min-height: 26px;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+/* Do not float buttons globally. */
+button {
+    float: none;
+}
+
+/* ---------- Show data toggle ---------- */
 .toggle-checkbox-wrapper {
     position: relative;
-    width: 80px;
+    width: 120px;
     height: 32px;
-    float: left;       
+    margin: 0;
+    padding: 0;
+    float: none;
 }
 
 .toggle-checkbox {
-    display: none;
     position: absolute;
-    float: right;
-}
-
-.check-slider {
-    position: relative;
-    float: right;
-}
-
-/* ellipsis */
-.check-slider::before {
-    background: #AAAAAA;
-    border-radius: 34px;
-    content: '';
-    height: 24px;
-    position: relative;
-    float: right;
-    top: 4px;
-    width: 40px;
-}
-
-/* circle */ 
-.check-slider::after {
-    background: white;
-    border-radius: 50%;
-    content: '';
-    height: 16px;
-    position: relative;
-    float: right;
-    left: 20px;
-    top: 8px;
-    transition: 0.4s;
-    width: 16px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
 }
 
 .toggle-text {
-    margin-left: 0px;
-    font-size: 14px;
     position: absolute;
-    float: left;      
+    left: 0;
+    top: 8px;
+    width: 68px;
+    margin: 0;
+    padding: 0;
+    float: none;
+    display: inline-block;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.check-slider {
+    position: absolute;
+    top: 0;
+    right: 0;
     width: 40px;
-    display: inline;
+    height: 32px;
+    float: none;
+    cursor: pointer;
+}
+
+/* Switch track */
+.check-slider::before {
+    content: "";
+    position: absolute;
+    top: 4px;
+    right: 0;
+    width: 40px;
+    height: 24px;
+    border-radius: 34px;
+    background: #AAAAAA;
+}
+
+/* Switch circle */
+.check-slider::after {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 4px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: white;
+    transition: transform 0.2s;
 }
 
 .toggle-checkbox:checked + .check-slider::before {
@@ -200,14 +268,19 @@ select {
     display: inline-block;
 }
 
+/* Preserve a visible keyboard-focus indicator. */
+.toggle-checkbox:focus-visible + .check-slider {
+    outline: 2px solid #2687F2;
+    outline-offset: 3px;
+    border-radius: 4px;
+}
+
 .svgcolor {
     filter: invert(0%) sepia(97%) saturate(0%) hue-rotate(34deg) brightness(89%) contrast(103%);
 }
 
 body.dark-mode .svgcolor {
     filter: invert(100%) sepia(100%) saturate(0%) hue-rotate(201deg) brightness(106%) contrast(106%);
-}
-.header-text {
 }
 
 input[type="range"] {
@@ -222,14 +295,16 @@ input[type="range"] {
     pointer-events: auto;
     width: 100%;
 }
+
 input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     width: 16px;
     height: 16px;
-    background-color: #DDDDDD ;
+    background-color: #DDDDDD;
     border-radius: 50%;
     pointer-events: auto;
 }
+
 input[type="range"]::-moz-range-thumb {
     width: 15px;
     height: 15px;
@@ -240,40 +315,65 @@ input[type="range"]::-moz-range-thumb {
 }
 
 @media (max-width: 700px) {
+    .top-bar {
+        grid-template-columns: minmax(0, 1fr) 125px;
+        grid-template-areas:
+            "title controls"
+            "toggle controls";
+        row-gap: 8px;
+        column-gap: 10px;
+        align-items: start;
+    }
+
+    .header-text {
+        grid-area: title;
+        font-size: 30px;
+    }
+
+    .toggle-checkbox-wrapper {
+        grid-area: toggle;
+        justify-self: start;
+        align-self: start;
+        margin-top: 4px;
+    }
+
+    .control-stack {
+        grid-area: controls;
+        justify-self: end;
+        align-self: start;
+    }
+
     .chart {
         width: 100%;
         height: 45vh;
     }
+
     .all-sliders-container {
-	margin-top: 0px;
+        margin-top: 0;
         width: 100%;
         height: 35vh;
     }
-    .header-text {
-	font-size: 30px;
-    }
-    .container-buttons {
-	width: 40%;
-    }
 }
+
 @media (max-width: 500px) {
-    .chart, .all-sliders-container {
-	margin-top: 0px;
+    .header-text {
+        font-size: 25px;
+    }
+
+    .chart,
+    .all-sliders-container {
+        margin-top: 0;
         width: 100%;
         height: 300px;
     }
-    .header-text {
-	font-size: 25px;
-    }
-    .container-buttons {
-	width: 60%;
-    }
 }
+
 @media (max-height: 900px) and (min-width: 700px) {
     .chart {
         min-height: 400px;
         height: 80vh;
     }
+
     .all-sliders-container {
         min-height: 300px;
         height: 80vh;
