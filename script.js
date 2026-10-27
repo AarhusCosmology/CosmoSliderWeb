@@ -739,6 +739,13 @@ function isCompactChart() {
     ));
 }
 
+function isLegendTooBig() {
+    const chartElement = document.getElementById("outputChart");
+    return Boolean(chartElement && (
+        chartElement.offsetWidth <= 800
+    ));
+}
+
 function getObservationMarkerRadius() {
     return isCompactChart()
         ? COMPACT_OBSERVATION_MARKER_RADIUS
@@ -2851,6 +2858,7 @@ async function updateDataAndChart() {
     );
 
     const compact = isCompactChart();
+    const moveLegend = isLegendTooBig();
 
     axisConfig.series[0].showInLegend = false;
 
@@ -2859,6 +2867,9 @@ async function updateDataAndChart() {
     if (compact && observable === "Cl") {
 	xLegendOffset = -14;
 	yLegendOffset = 8;
+    } else if (moveLegend && observable === "Pk" && !compact) {
+ 	xLegendOffset = 73;
+	yLegendOffset = -99;
     } else if (compact && observable === "Pk") {
 	xLegendOffset = 58;
 	yLegendOffset = -70;
@@ -2870,8 +2881,8 @@ async function updateDataAndChart() {
     axisConfig.legend = {
 	enabled: hasLegendEntries,
 	layout: "vertical",
-	align: compact && observable === "Pk" ? "left" : "right",
-	verticalAlign: compact && observable === "Pk" ? "bottom" : "top",
+	align: moveLegend && observable === "Pk" ? "left" : "right",
+	verticalAlign: moveLegend && observable === "Pk" ? "bottom" : "top",
 	floating: true,
 	x: xLegendOffset,
 	y: yLegendOffset,
