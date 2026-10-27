@@ -1575,6 +1575,7 @@ function updateOtherObservableAxes() {
     let xFallback = observable;
     let xWidth = 100;
     let xHeight = 40;
+    let xMargin = 18;
 
     if (observable === "Pk") {
         xFile = "k.svg";
@@ -1584,6 +1585,8 @@ function updateOtherObservableAxes() {
     } else if (observable === "bg" || observable === "th") {
         xFile = "z.svg";
         xFallback = "z";
+	xHeight = compact ? 25 : 40;
+	xMargin = compact ? 10 : 18;
     }
 
     let yFile = null;
@@ -1670,7 +1673,7 @@ function updateOtherObservableAxes() {
             text: xTitle,
             useHTML: true,
             align: "middle",
-            margin: 18
+            margin: xMargin
         },
         lineColor: axisColor,
         lineWidth: 2,
