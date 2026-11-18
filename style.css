@@ -226,6 +226,63 @@ button {
     cursor: pointer;
 }
 
+/* ---------- Show data and model import controls ---------- */
+
+.left-control-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    width: 120px;
+    min-width: 120px;
+}
+
+.import-model-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+
+    width: 120px;
+    min-height: 30px;
+
+    padding: 5px 7px;
+
+    border: 1px solid #888;
+    border-radius: 5px;
+
+    background: #f5f5f5;
+    color: #222;
+
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.import-model-button svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.import-model-button:hover {
+    background: #e5e5e5;
+}
+
+.import-model-button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+body.dark-mode .import-model-button {
+    background: #222;
+    color: white;
+    border-color: #777;
+}
+
+body.dark-mode .import-model-button:hover {
+    background: #383838;
+}
+
 /* Switch track */
 .check-slider::before {
     content: "";
@@ -330,11 +387,15 @@ input[type="range"]::-moz-range-thumb {
         font-size: 30px;
     }
 
+    .left-control-stack {
+	grid-area: toggle;
+	justify-self: start;
+	align-self: start;
+	margin-top: 4px;
+    }
+
     .toggle-checkbox-wrapper {
-        grid-area: toggle;
-        justify-self: start;
-        align-self: start;
-        margin-top: 4px;
+	margin: 0;
     }
 
     .control-stack {
@@ -378,4 +439,18 @@ input[type="range"]::-moz-range-thumb {
         min-height: 300px;
         height: 80vh;
     }
+}
+
+/* Hidden observation legend items */
+#outputChart .highcharts-legend-item-hidden text {
+    fill: #888888 !important;
+    text-decoration: line-through;
+}
+
+#outputChart .highcharts-legend-item-hidden .highcharts-point,
+#outputChart .highcharts-legend-item-hidden .highcharts-graph,
+#outputChart .highcharts-legend-item-hidden .highcharts-legend-symbol {
+    fill: #888888 !important;
+    stroke: #888888 !important;
+    opacity: 0.6 !important;
 }

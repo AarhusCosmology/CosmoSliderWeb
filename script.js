@@ -57,6 +57,93 @@ document.getElementById("toggleDarkMode").addEventListener("click", () => {
     updateAxesAndChart();
 });
 
+
+const importModelButton = document.getElementById(
+    "importModelButton"
+);
+
+const importModelInput = document.getElementById(
+    "importModelInput"
+);
+
+
+// Open the file picker.
+importModelButton.addEventListener("click", event => {
+    event.stopPropagation();
+    importModelInput.click();
+});
+
+// Prevent the hidden input's click from triggering the
+// general chart-refresh click listener on document.body.
+importModelInput.addEventListener("click", event => {
+    event.stopPropagation();
+});
+
+
+// Load a selected model.
+importModelInput.addEventListener("change", async event => {
+    event.stopPropagation();
+
+    const file = event.target.files?.[0];
+
+    if (!file) {
+        return;
+    }
+
+    const label = importModelButton.querySelector(
+        ".import-model-label"
+    );
+
+    importModelButton.disabled = true;
+
+    if (label) {
+        label.textContent = "Loading...";
+    }
+
+    let importedBundle = null;
+
+    try {
+        importedBundle = await loadModelBundleFromFile(file);
+
+        await activateModelBundle(importedBundle);
+
+        importModelButton.title =
+            `Active model: ${file.name}. Refresh to restore the default model.`;
+
+        console.info(`Imported model: ${file.name}`);
+
+    } catch (error) {
+        console.error("Model import failed:", error);
+
+        // Dispose of a model that failed before becoming active.
+        if (
+            importedBundle?.model &&
+            importedBundle.model !== model
+        ) {
+            try {
+                importedBundle.model.dispose?.();
+            } catch (disposeError) {
+                console.warn(disposeError);
+            }
+        }
+
+        alert(
+            `Could not import model "${file.name}":\n\n${error.message}`
+        );
+
+    } finally {
+        importModelButton.disabled = false;
+
+        if (label) {
+            label.textContent = "Import model";
+        }
+
+        // Do not retain the selected File object in the input.
+        importModelInput.value = "";
+    }
+});
+
+
 let model;
 const sliders = [];
 
@@ -71,9 +158,42 @@ let xValuesByObservable = {};
 const pkOutputsByName = new Map();
 const selectedRedshift = { value: 0 };
 
+// Observation series hidden by legend clicks.
+// Persist across chart redraws, but reset when the observable changes.
+const hiddenObservationSeriesIds = new Set();
+const CMB_OBSERVATION_SERIES_ID = "cmb-observed-data";
+
 const DEFAULT_MODEL_BUNDLE_URL = "models/default_model.tflite";
 
+const DISABLE_TH_INTERPOLATION = false;
+
 let modelBundle = null;
+
+async function loadModelBundleFromArrayBuffer(archiveBuffer) {
+    const archive = await JSZip.loadAsync(archiveBuffer);
+
+    // The uploaded .tflite file must be the same bundle format
+    // as the default model archive.
+    const modelFile = archive.file("model.tflite");
+
+    if (!modelFile) {
+        throw new Error(
+            "Invalid model archive: model.tflite was not found."
+        );
+    }
+
+    const modelBuffer = await modelFile.async("arraybuffer");
+
+    const tfliteModel = await tflite.loadTFLiteModel(
+        modelBuffer
+    );
+
+    return {
+        model: tfliteModel,
+        archive: archive
+    };
+}
+
 
 async function loadModelBundleFromUrl(url) {
     const response = await fetch(url);
@@ -84,30 +204,66 @@ async function loadModelBundleFromUrl(url) {
         );
     }
 
-    // The .tflite file selected by the iOS app is a ZIP archive.
     const archiveBuffer = await response.arrayBuffer();
-    const archive = await JSZip.loadAsync(archiveBuffer);
 
-    // Extract the actual TensorFlow Lite model from the archive.
-    const modelFile = archive.file("model.tflite");
-
-    if (!modelFile) {
-        throw new Error(
-            "Invalid model archive: model.tflite was not found at the archive root."
-        );
-    }
-
-    const modelBuffer = await modelFile.async("arraybuffer");
-
-    // Load the actual TFLite model into the browser runtime.
-    const tfliteModel = await tflite.loadTFLiteModel(modelBuffer);
-
-    return {
-        model: tfliteModel,
-        archive: archive
-    };
+    return loadModelBundleFromArrayBuffer(archiveBuffer);
 }
 
+
+async function loadModelBundleFromFile(file) {
+    const archiveBuffer = await file.arrayBuffer();
+
+    return loadModelBundleFromArrayBuffer(archiveBuffer);
+}
+
+// Y-axis scaling rules.
+//
+// mode:
+//   "auto"   = use logarithmic scaling if the dynamic range
+//              reaches minLogDecades
+//   "log"    = force logarithmic scaling (requires positive values)
+//   "linear" = force linear scaling
+//
+// minLogDecades:
+//   1.0 = a factor of 10 in the y-values
+//   0.5 = a factor of approximately 3.16
+//   2.0 = a factor of 100
+//
+// Per-output rules override per-observable rules.
+const Y_AXIS_SCALE_CONFIG = {
+    default: {
+        mode: "auto",
+        minLogDecades: 1.0
+    },
+
+    byObservable: {
+        bg: {
+            mode: "log",
+            minLogDecades: 1.0
+        },
+
+        th: {
+            mode: "log",
+            minLogDecades: 1.0
+        },
+
+        extra: {
+            mode: "auto",
+            minLogDecades: 1.0
+        }
+    },
+
+    byOutput: {
+        // Examples:
+        //
+        // "th_temperature": { mode: "linear" },
+        // "bg_H": { mode: "log" },
+        // "th_someOutput": {
+        //     mode: "auto",
+        //     minLogDecades: 0.5
+        // }
+    }
+};
 
 async function readArchiveText(archive, filename) {
     const file = archive.file(filename);
@@ -165,70 +321,110 @@ async function initializeFixedYAxisSettings() {
                     continue;
                 }
 
-                const values = allOutputs
-                    .slice(range.start, range.end)
-                    .map(Number)
-                    .filter(Number.isFinite);
+		// Keep all finite values for possible linear-axis use.
+		const values = allOutputs
+		      .slice(range.start, range.end)
+		      .map(Number)
+		      .filter(Number.isFinite);
 
-                // Match the iOS fallback values if a valid output is absent.
-                const low = values.length
-                    ? Math.min(...values)
-                    : 1;
+		// A logarithmic axis can only display strictly positive values.
+		const positiveValues = values.filter(value => value > 0);
 
-                const high = values.length
-                    ? Math.max(...values)
-                    : 2;
+		// Read the configured rule. Individual outputs override observables.
+		const scaleRule =
+		      Y_AXIS_SCALE_CONFIG.byOutput[key] ??
+		      Y_AXIS_SCALE_CONFIG.byObservable[observable] ??
+		      Y_AXIS_SCALE_CONFIG.default;
 
-                const validPositiveRange =
-                    low > 0 &&
-                    high > low;
+		const requestedMode = scaleRule.mode || "auto";
 
-                const logYSpan = validPositiveRange
-                    ? Math.log10(high) - Math.log10(low)
-                    : 0;
+		const minLogDecades = Number.isFinite(scaleRule.minLogDecades)
+		      ? Math.max(0, scaleRule.minLogDecades)
+		      : Y_AXIS_SCALE_CONFIG.default.minLogDecades;
 
-                const useLogY =
-                    validPositiveRange &&
-                    logYSpan >= 1;
+		// Calculate logarithmic bounds using positive values only.
+		const positiveLow = positiveValues.length
+		      ? Math.min(...positiveValues)
+		      : null;
 
-                if (useLogY) {
-                    const padding = Math.max(
-                        logYSpan * 0.05,
-                        0.05
-                    );
+		const positiveHigh = positiveValues.length
+		      ? Math.max(...positiveValues)
+		      : null;
 
-                    fixedYAxisSettings.set(key, {
-                        mode: "log",
-                        bounds: [
-                            Math.log10(low) - padding,
-                            Math.log10(high) + padding
-                        ]
-                    });
-                } else {
-                    const safeLow = Number.isFinite(low) ? low : 0;
-                    const safeHigh = Number.isFinite(high) ? high : 1;
+		const logYSpan = positiveValues.length > 0
+		      ? Math.log10(positiveHigh) - Math.log10(positiveLow)
+		      : 0;
 
-                    const padding = Math.max(
-                        Math.max(
-                            Math.abs(safeLow),
-                            Math.abs(safeHigh)
-                        ) * 0.05,
-                        1e-10
-                    );
+		// Explicit log and linear modes take precedence over automatic selection.
+		const useLogY =
+		      requestedMode === "log" ||
+		      (
+			  requestedMode !== "linear" &&
+			      positiveValues.length > 0 &&
+			      logYSpan >= minLogDecades
+		      );
 
-                    const span = Math.max(
-                        safeHigh - safeLow,
-                        padding
-                    );
+		if (useLogY) {
 
-                    fixedYAxisSettings.set(key, {
-                        mode: "linear",
-                        bounds: [
-                            safeLow - 0.1 * span,
-                            safeHigh + 0.2 * span
-                        ]
-                    });
-                }
+		    if (positiveValues.length > 0) {
+			const padding = Math.max(
+			    logYSpan * 0.05,
+			    0.05
+			);
+
+			fixedYAxisSettings.set(key, {
+			    mode: "log",
+			    bounds: [
+				Math.log10(positiveLow) - padding,
+				Math.log10(positiveHigh) + padding
+			    ]
+			});
+
+		    } else {
+			// Keep the explicitly requested log mode even if there are
+			// currently no positive samples. The plotted series will be empty.
+			console.warn(
+			    `No positive values available for logarithmic output ${key}.`
+			);
+
+			fixedYAxisSettings.set(key, {
+			    mode: "log",
+			    bounds: [0, 1]
+			});
+		    }
+
+		} else {
+
+		    // Linear axes retain negative and zero values.
+		    const low = values.length
+			  ? Math.min(...values)
+			  : 1;
+
+		    const high = values.length
+			  ? Math.max(...values)
+			  : 2;
+
+		    const padding = Math.max(
+			Math.max(
+			    Math.abs(low),
+			    Math.abs(high)
+			) * 0.05,
+			1e-10
+		    );
+
+		    const span = Math.max(
+			high - low,
+			padding
+		    );
+
+		    fixedYAxisSettings.set(key, {
+			mode: "linear",
+			bounds: [
+			    low - 0.1 * span,
+			    high + 0.2 * span
+			]
+		    });
+		}
             }
         }
     } finally {
@@ -279,8 +475,8 @@ async function readParameterDefinitions(archive) {
         }
 
         const [name, minText, maxText, stepText] = parts;
-        const min = Number(minText);
-        const max = Number(maxText);
+        let min = Number(minText);
+        let max = Number(maxText);
         const step = Number(stepText);
         const bestFit = bestFitByName.get(name);
 
@@ -309,6 +505,15 @@ async function readParameterDefinitions(archive) {
                 { bestFit, min, max }
             );
         }
+
+	if (name === "ln10^{10}A_s") {
+	    min = 2.0;
+	    max = 4.0;
+	} else if (name === "omega_cdm") {
+	    min = 0.1;
+	} else if (name === "H0") {
+	    min = 64;
+	}
 
         definitions.push({
             name,
@@ -777,9 +982,89 @@ function resetSlidersToBestfit() {
     });
 }
 
+function isNonlinearPkSelected() {
+    return selectedObservable.value === "Pk" &&
+        !String(selectedOption.value || "")
+            .toLowerCase()
+            .includes("lin");
+}
+
+function isCMinOrEta0(parameter) {
+    const name = String(parameter?.name || "")
+        .trim()
+        .toLowerCase();
+
+    return name === "c_min" || name === "eta_0";
+}
+
+function isTauReio(parameter) {
+    return String(parameter?.name || "")
+        .trim()
+        .toLowerCase() === "tau_reio";
+}
+
+
+function updateNonlinearPkParameterSliders() {
+    const isNonlinearPk = isNonlinearPkSelected();
+    const isPk = selectedObservable.value === "Pk";
+
+    sliders.forEach((slider, index) => {
+        const parameter = parameterDefinitions[index];
+
+        const isNonlinearParameter = isCMinOrEta0(parameter);
+        const isPkOnlyHiddenParameter = isTauReio(parameter);
+
+        if (!isNonlinearParameter && !isPkOnlyHiddenParameter) {
+            return;
+        }
+
+        // c_min and eta_0 are adjustable only for nonlinear Pk.
+        // tau_reio is adjustable for every observable except Pk.
+        const shouldShow = isNonlinearParameter
+            ? isNonlinearPk
+            : !isPk;
+
+        const wrapper = slider.closest(".slider-container");
+
+        if (wrapper) {
+            wrapper.hidden = !shouldShow;
+        }
+
+        // Whenever a parameter is hidden, force its bundle best-fit value.
+        if (!shouldShow) {
+            slider.value = String(parameter.bestFit);
+            updateSliderFill(slider);
+
+            const valueLabel = document.getElementById(
+                `slider${index + 1}-value`
+            );
+
+            if (valueLabel) {
+                valueLabel.textContent = formatParameterValue(
+                    parameter.bestFit,
+                    parameter.step
+                );
+            }
+        }
+    });
+}
+
 
 function resetGraphToBestfit() {
+    // Reset all cosmological parameters.
     resetSlidersToBestfit();
+
+    // Reset redshift as well.
+    selectedRedshift.value = 0;
+
+    // Update the redshift slider and its displayed value.
+    // For Pk, this also synchronizes the slider with the selected family.
+    updateRedshiftSliderForSelection();
+
+    // Apply the visibility and best-fit rules for c_min and eta_0.
+    updateNonlinearPkParameterSliders();
+
+    // Recalculate and redraw the selected spectrum.
     updateDataAndChart();
 }
 
@@ -1035,12 +1320,15 @@ function populateObservableSelector() {
 function handleSelection(event) {
     selectedOption.value = event.target.value;
     updateRedshiftSliderForSelection();
+    updateNonlinearPkParameterSliders();
     updateObservedDataSelection();
     updateDataAndChart();
 }
 
 
 function handleObservableSelection(event) {
+    hiddenObservationSeriesIds.clear();
+
     selectedObservable.value = event.target.value;
 
     // Select the first output for the new observable.
@@ -1052,6 +1340,7 @@ function handleObservableSelection(event) {
 
     populateOutputSelector();
     updateRedshiftSliderForSelection();
+    updateNonlinearPkParameterSliders();
     updateObservedDataSelection();
     updateDataAndChart();
 }
@@ -1604,8 +1893,8 @@ function updateOtherObservableAxes() {
     if (observable === "Pk") {
         yFile = "Pk.svg";
         yFallback = "P(k)";
-	yWidth = compact ? 120 : 160;
-	yHeight = compact ? 87 : 110;
+	yWidth = compact ? 150 : 190;
+	yHeight = compact ? 87 : 140;
     }
 
     const xTitle = axisTitleHTML(
@@ -1696,8 +1985,8 @@ function updateOtherObservableAxes() {
     let yLabelYOffset;
     if (yFile != null) {
 	yLabelMargin = compact ? 60 : 80;
-	yLabelXOffset = yWidth + 80 + 20 - 100;
-	yLabelYOffset = compact ? -40 : -40;
+	yLabelXOffset = compact ? yWidth - 30 : yWidth;
+	yLabelYOffset = compact ? -40 : -70;
     } else {
 	yLabelMargin = compact ? 10 : 10;
 	yLabelXOffset = 0;
@@ -1738,45 +2027,149 @@ function updateOtherObservableAxes() {
     };
 }
 
+async function activateModelBundle(bundle) {
 
-window.addEventListener('load', async () => {
-
-    modelBundle = await loadModelBundleFromUrl(
-	DEFAULT_MODEL_BUNDLE_URL
+    // Read and validate the new model's metadata before
+    // replacing the currently active model.
+    const nextOutputRanges = await readOutputRanges(
+        bundle.archive
     );
 
-    outputRanges = await readOutputRanges(modelBundle.archive);
-    xValuesByObservable = await readXValues(modelBundle.archive);
+    const nextXValues = await readXValues(
+        bundle.archive
+    );
 
-    model = modelBundle.model;
+    const nextParameterDefinitions =
+        await readParameterDefinitions(bundle.archive);
 
+
+    // Test the model with its own best-fit parameters.
+    // This catches incompatible input dimensions before activation.
+    const testInput = tf.tensor([
+        nextParameterDefinitions.map(parameter => parameter.bestFit)
+    ]);
+
+    let testOutput = null;
+    let outputLength = 0;
+
+    try {
+        testOutput = bundle.model.predict(testInput);
+
+        const outputArray = await testOutput.array();
+
+        outputLength = outputArray?.[0]?.length ?? 0;
+
+    } finally {
+        testInput.dispose();
+
+        if (testOutput) {
+            testOutput.dispose();
+        }
+    }
+
+    if (!Number.isInteger(outputLength) || outputLength <= 0) {
+        throw new Error(
+            "The imported model returned an invalid output."
+        );
+    }
+
+    // Check that the metadata does not refer outside the model output.
+    for (const [name, range] of nextOutputRanges) {
+        if (range.end > outputLength) {
+            throw new Error(
+                `Output range for "${name}" exceeds the model output size.`
+            );
+        }
+    }
+
+
+    // Remember the previous model so it can be released after activation.
+    const previousModel = model;
+
+
+    // Activate the new model and its metadata.
+    modelBundle = bundle;
+    model = bundle.model;
+
+    outputRanges = nextOutputRanges;
+    xValuesByObservable = nextXValues;
+
+    // Rebuild the available observables and spectra.
     buildObservableOptions();
     populateObservableSelector();
 
-    // Read this model's own parameter definitions and defaults.
-    parameterDefinitions = await readParameterDefinitions(
-	modelBundle.archive
-    );
+    // Recreate all parameter sliders from the new bundle.
+    parameterDefinitions = nextParameterDefinitions;
 
     await createParameterSliders(
-	parameterDefinitions,
-	modelBundle.archive
+        parameterDefinitions,
+        modelBundle.archive
     );
 
+    // createParameterSliders clears the slider container,
+    // so recreate the redshift slider afterward.
     createRedshiftSlider();
-    updateRedshiftSliderForSelection();
 
+    // Start the imported model at its best-fit parameters.
     resetSlidersToBestfit();
 
+    // Start redshift at zero.
+    selectedRedshift.value = 0;
+    updateRedshiftSliderForSelection();
+
+    // Recalculate axis settings using the new model.
     await initializeFixedYAxisSettings();
 
-    // Keep your existing initialization below:
-    document.body.addEventListener("click", updateAxesAndChart);
-    window.addEventListener("resize", updateAxesAndChart);
+    updateObservedDataSelection();
 
     updateAxes();
-    updateDataAndChart();
+    await updateDataAndChart();
 
+
+    // Release the previous model if its runtime supports disposal.
+    if (
+        previousModel &&
+        previousModel !== model &&
+        typeof previousModel.dispose === "function"
+    ) {
+        try {
+            previousModel.dispose();
+        } catch (error) {
+            console.warn("Could not dispose of the previous model:", error);
+        }
+    }
+}
+
+
+window.addEventListener("load", async () => {
+
+    try {
+        // Always load the default bundle when the page starts.
+        const defaultBundle = await loadModelBundleFromUrl(
+            DEFAULT_MODEL_BUNDLE_URL
+        );
+
+        // Set up the model, sliders, metadata and chart.
+        await activateModelBundle(defaultBundle);
+
+        // Keep the existing chart refresh listeners.
+        document.body.addEventListener(
+            "click",
+            updateAxesAndChart
+        );
+
+        window.addEventListener(
+            "resize",
+            updateAxesAndChart
+        );
+
+    } catch (error) {
+        console.error("Application initialization failed:", error);
+
+        alert(
+            `Could not initialize CosmoSlider:\n\n${error.message}`
+        );
+    }
 });
 
 
@@ -2008,14 +2401,14 @@ function updateAxes() {
     var fontSize = '20px';
     var xSvgWidth = '120px';
     var xSvgHeight = '50px';
-    var ySvgWidth = '150px';
-    var ySvgHeight = '150px';
+    var ySvgWidth = '240px';
+    var ySvgHeight = '240px';
     var ySvgFile = 'Cl.svg';
     var marginLeft = 80;
     var marginRight = 30;
     var marginBottom = 110;
     var yLabelMargin = 100;
-    var yLabelOffset = -70;
+    var yLabelOffset = -125;
     var lineWidth = 6;
     var yMin = 0;
     var yMax = 7000;
@@ -2056,13 +2449,13 @@ function updateAxes() {
         fontSize = '14px';
         xSvgWidth = '80px';
         xSvgHeight = '30px';
-        ySvgWidth = '100px';
-        ySvgHeight = '100px';
+        ySvgWidth = '165px';
+        ySvgHeight = '165px';
         marginLeft = 65;
         marginRight = 20;
         marginBottom = 80;
         yLabelMargin = 65;
-        yLabelOffset = -40;
+        yLabelOffset = -75;
         lineWidth = 3;
         yLabels = yLabelsReduced;
 
@@ -2298,9 +2691,10 @@ function getPkSpectrumAtRedshift(
     requestedRedshift,
     expectedLength
 ) {
-    const familyKey = String(pkName)
-	  .replace(/^Pk_/i, "")
-	  .toLowerCase();
+    // pkName is already a family key, e.g. "pk_lin" or "pk_cb_lin".
+    // Do not strip "Pk_" here, because that would remove the family's
+    // own "pk_" prefix.
+    const familyKey = String(pkName).trim().toLowerCase();
 
     const family = pkOutputsByName.get(familyKey);
 
@@ -2451,6 +2845,8 @@ function buildPkObservationSeries(dataBundle) {
             dataset.id || datasetIndex
         ).replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 
+	const isHidden = hiddenObservationSeriesIds.has(seriesId);
+
         // Observational values are already h-scaled.
         // The chart's Pk axes use log10 coordinates.
         const pointData = points.map(point => [
@@ -2465,6 +2861,7 @@ function buildPkObservationSeries(dataBundle) {
             showInLegend: true,
             data: pointData,
             color,
+	    visible: !isHidden,
             zIndex: 8,
             enableMouseTracking: false,
             marker: {
@@ -2499,6 +2896,7 @@ function buildPkObservationSeries(dataBundle) {
 		showInLegend: false,
 		data: yErrorData,
 		color,
+		visible: !isHidden,
 		lineWidth: OBSERVATION_ERRORBAR_LINE_WIDTH,
 		opacity: OBSERVATION_ERRORBAR_OPACITY,
 		marker: { enabled: false },
@@ -2544,6 +2942,7 @@ function buildPkObservationSeries(dataBundle) {
 		showInLegend: false,
 		data: xErrorData,
 		color,
+		visible: !isHidden,
 		lineWidth: OBSERVATION_ERRORBAR_LINE_WIDTH,
 		opacity: OBSERVATION_ERRORBAR_OPACITY,
 		marker: { enabled: false },
@@ -2558,6 +2957,9 @@ function buildPkObservationSeries(dataBundle) {
 }
 
 async function updateDataAndChart() {
+    // Enforce best-fit values whenever these parameters are not adjustable.
+    updateNonlinearPkParameterSliders();
+    
     // Get slider values
     const sliderValues = sliders.map(slider => parseFloat(slider.value));
     sliderValues.forEach((value, index) => {
@@ -2688,9 +3090,14 @@ async function updateDataAndChart() {
 	  )
 	  .sort((a, b) => a.x - b.x);
 
-    if (points.length < 3) {
+    const useRawThermodynamicsPoints =
+	  observable === "th" && DISABLE_TH_INTERPOLATION;
+
+    const minimumPoints = useRawThermodynamicsPoints ? 2 : 3;
+
+    if (points.length < minimumPoints) {
 	throw new Error(
-            `Not enough valid points to interpolate ${observable}_${option}.`
+            `Not enough valid points to plot ${observable}_${option}.`
 	);
     }
 
@@ -2738,13 +3145,15 @@ async function updateDataAndChart() {
 
     const usePchip = observable === "th";
 
-    const interpolatedSpectrum = usePchip
-	  ? interpolatePchipData(splineX, splineY, xGrid)
-	  : interpolateData(splineY, splineX, xGrid);
+    const plottedXGrid = useRawThermodynamicsPoints
+	  ? splineX
+	  : xGrid;
 
-    // For logarithmic axes, keep y-values in log10 coordinates.
-    // updateOtherObservableAxes() formats the ticks as powers of ten.
-    const smoothSpectrum = interpolatedSpectrum;
+    const plottedSpectrum = useRawThermodynamicsPoints
+	  ? splineY
+	  : observable === "th"
+          ? interpolatePchipData(splineX, splineY, xGrid)
+          : interpolateData(splineY, splineX, xGrid);
 
     function plottedX(value) {
 	if (observable === "Cl") {
@@ -2758,10 +3167,23 @@ async function updateDataAndChart() {
 	return value;
     }
 
+    // Disable all curve interpolation for thermodynamics when requested.
+    // Scatter plots show the actual model output samples without connecting
+    // or smoothing them.
+    axisConfig.series[0].type = useRawThermodynamicsPoints
+	? "scatter"
+	: "spline";
 
-    axisConfig.series[0].data = smoothSpectrum
+    axisConfig.series[0].lineWidth = useRawThermodynamicsPoints ? 0 : 6;
+
+    axisConfig.series[0].marker = {
+	enabled: useRawThermodynamicsPoints,
+	radius: 2
+    };
+
+    axisConfig.series[0].data = plottedSpectrum
 	.map((y, index) => [
-            plottedX(xGrid[index]),
+            plottedX(plottedXGrid[index]),
             y
 	])
 	.filter(point =>
@@ -2817,6 +3239,18 @@ async function updateDataAndChart() {
 	axisConfig.series[1].name = option === "PP"
             ? "SPT-SZ + Planck lensing map"
             : `Planck 2018 ${option}`;
+
+	const cmbIsHidden = hiddenObservationSeriesIds.has(
+	    CMB_OBSERVATION_SERIES_ID
+	);
+
+	// Give the observed CMB points a stable ID.
+	axisConfig.series[1].id = CMB_OBSERVATION_SERIES_ID;
+	axisConfig.series[1].visible = !cmbIsHidden;
+
+	// Link the CMB error lines to those points.
+	axisConfig.series[2].linkedTo = CMB_OBSERVATION_SERIES_ID;
+	axisConfig.series[2].visible = !cmbIsHidden;
 
 	axisConfig.series[1].showInLegend = true;
 	axisConfig.series[2].showInLegend = false;
@@ -2881,6 +3315,44 @@ async function updateDataAndChart() {
     axisConfig.legend = {
 	enabled: hasLegendEntries,
 	layout: "vertical",
+	events: {
+	    itemClick: function (event) {
+		// In Highcharts, the legend item is normally the series.
+		// The fallback also handles wrappers exposing .series.
+		const item = event.legendItem;
+		const series = item?.series || item;
+
+		const seriesId =
+		      series?.options?.id ||
+		      item?.options?.id;
+
+		// Only track observational datasets, not model curves.
+		if (
+		    seriesId !== CMB_OBSERVATION_SERIES_ID &&
+			!String(seriesId || "").startsWith("pk-observed-")
+		) {
+		    return;
+		}
+
+		// This event fires before Highcharts performs its default toggle.
+		const currentlyVisible =
+		      typeof series?.visible === "boolean"
+                      ? series.visible
+                      : item?.visible !== false;
+
+		if (currentlyVisible) {
+		    hiddenObservationSeriesIds.add(seriesId);
+		} else {
+		    hiddenObservationSeriesIds.delete(seriesId);
+		}
+
+		// Do not return false: allow Highcharts to toggle visibility.
+	    }
+	},
+	itemHiddenStyle: {
+	    color: "#888888",
+	    textDecoration: "line-through"
+	},
 	align: moveLegend && observable === "Pk" ? "left" : "right",
 	verticalAlign: moveLegend && observable === "Pk" ? "bottom" : "top",
 	floating: true,

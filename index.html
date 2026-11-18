@@ -25,15 +25,54 @@
     <header class="top-bar">
       <h1 class="header-text">CosmoSlider</h1>
 
-      <div class="toggle-checkbox-wrapper">
-        <input
-          class="toggle-checkbox"
-          type="checkbox"
-          id="toggle"
-          onchange="showData(this)"
-        >
-        <label for="toggle" class="check-slider"></label>
-        <span class="toggle-text">Show data</span>
+      <div class="left-control-stack">
+
+	<div class="toggle-checkbox-wrapper">
+          <input
+            class="toggle-checkbox"
+            type="checkbox"
+            id="toggle"
+            onchange="showData(this)"
+            >
+
+          <label
+            for="toggle"
+            class="check-slider"
+            ></label>
+
+          <span class="toggle-text">Show data</span>
+	</div>
+
+	<button
+          type="button"
+          id="importModelButton"
+          class="import-model-button"
+          title="Import a model for this session"
+	  >
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            >
+            <path d="M12 16V4"></path>
+            <path d="M7 9l5-5 5 5"></path>
+            <path d="M5 14v5h14v-5"></path>
+          </svg>
+
+          <span class="import-model-label">Import model</span>
+	</button>
+
+	<input
+          type="file"
+          id="importModelInput"
+          accept=".tflite,.zip,application/zip,application/octet-stream"
+          hidden
+	  >
+
       </div>
 
       <div class="control-stack">
